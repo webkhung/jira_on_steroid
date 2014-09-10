@@ -1,0 +1,15 @@
+.lc-jira-label {
+    position: absolute;
+    top:0px;
+    right:0px;
+    font-size:11px;
+    background: #fffe6a;
+    padding: 0 2px;
+    border: 1px soild #aaaaaa;
+}
+
+.lc-error {
+    padding-left: 10px;
+    color: red;
+    font-size: 14px;
+}

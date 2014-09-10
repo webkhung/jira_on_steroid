@@ -1,0 +1,27 @@
+{
+  "name": "LC JIRA BOARD",
+  "description": "",
+  "version": "3.1",
+  "icons": { "16": "LC.png",
+              "48": "LC.png",
+              "128": "LC.png" },
+  "permissions": [
+    "activeTab",
+    "storage"
+  ],
+  "background": {
+    "scripts": ["background.js"],
+    "persistent": false
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://jira.intuit.com/secure/RapidBoard.jspa*"],
+      "css": ["lc-jira-color.css"],
+      "js": ["lib/base64.js", "lib/underscore-min.js", "github.js", "jquery.js", "content_script.js"]
+    }
+  ],
+  "web_accessible_resources": [
+    "web.png"
+  ],
+  "manifest_version": 2
+}

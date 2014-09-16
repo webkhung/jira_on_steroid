@@ -1,8 +1,8 @@
 // https://jira.intuit.com/secure/RapidBoard.jspa?rapidView=7690&view=detail&selectedIssue=LCP-480&sprint=12300
 
-var labelTexts = ['FailedQA','InQA','Blocked'];
-var labelColors = ['#f3add0','#FFFF99','#dfb892']; // "#66FFFF"
-var labelOrders = [1,2,4]; // 3 is reserved for PullRequest
+var labelTexts = ['FailedQA','InQA','PullRequest','Blocked'];
+var labelColors = ['#f3add0','#FFFF99','#77fcfc','#dfb892']; // "#66FFFF"
+var labelOrders = [1,2,3,4]; // 3 is reserved for PullRequest
 var arrIssues = [];
 var pullRequestColor = "#77fcfc";
 var pullRequestOrder = 3;
@@ -17,7 +17,7 @@ function getParameterByName(name) {
 window.callGithub = function() {
     var github = new window.Github({
         username: "webkhung",
-        password: "mgtsang#1",
+        password: "",
         auth: "basic"
     });
     var issues = github.getIssues('live-community', 'live_community');
@@ -47,7 +47,7 @@ window.updateJiraBoard = function() {
 
                 var labels = data.issues[i].fields.labels;
                 var summary = data.issues[i].fields.summary;
-                var prInfo = pullRequestLabel(summary, elIssue);
+                var prInfo = gitPullRequestLabel(summary, elIssue);
                 var displayLabel = buildDisplayLabel(labels, prInfo, elIssue, arrIssueToSort);
                 addLabelToIssue(displayLabel, elIssue);
             }
@@ -100,7 +100,19 @@ function buildDisplayLabel(labels, prInfo, elIssue, arrIssueToSort){
         }
     }
 
-    return label + prInfo;
+    label = label.replace('PullRequest', 'PR');
+
+    if (prInfo.length > 0){
+        if (label.indexOf('PR') >= 0){
+            return label + ' - ' + prInfo;
+        }
+        else {
+            return 'PR - ' + prInfo;
+        }
+    }
+    else {
+        return label;
+    }
 }
 
 function addLabelToIssue(label, elIssue){
@@ -110,7 +122,7 @@ function addLabelToIssue(label, elIssue){
     }
 }
 
-function pullRequestLabel(summary, elIssue){
+function gitPullRequestLabel(summary, elIssue){
     var pr = pullRequest(summary);
     if (pr == null){
         return "";
@@ -121,7 +133,7 @@ function pullRequestLabel(summary, elIssue){
     var psLabel = '';
 
     if(pr['labels'].length > 0){
-        psLabel = 'PR - ' + pr['labels'][0]['name'];
+        psLabel = pr['labels'][0]['name'];
     }
     var prInfo = psLabel + ' (' + psDaysOld + ' days)';
 
@@ -151,7 +163,7 @@ function pullRequest(summary){
 }
 
 
-//function pullRequestLabel(summary, issue){
+//function gitPullRequestLabel(summary, issue){
 //    var prInfo = '';
 //    if(arrIssues.length > 0 && summary.lastIndexOf('--') > 0){
 //        var pullRequestNum = parseInt(summary.substring(summary.lastIndexOf('--')+2))

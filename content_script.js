@@ -1,11 +1,20 @@
+var s = document.createElement('script');
+s.src = chrome.extension.getURL('script.js');
+(document.head||document.documentElement).appendChild(s);
+s.onload = function() {
+    s.parentNode.removeChild(s);
+};
+
 // https://jira.intuit.com/secure/RapidBoard.jspa?rapidView=7690&view=detail&selectedIssue=LCP-480&sprint=12300
 
 var labelTexts = ['FailedQA','InQA','PullRequest','Blocked'];
 var labelColors = ['#f3add0','#FFFF99','#77fcfc','#dfb892']; // "#66FFFF"
 var labelOrders = [1,2,3,4]; // 3 is reserved for PullRequest
-var arrIssues = [];
+var githubIssues = [];
 var pullRequestColor = "#77fcfc";
 var pullRequestOrder = 3;
+var githubUserName = ''
+var githubPassword = ''
 
 function getParameterByName(name) {
     name = name.replace(/[\[]/, "\\[").replace(/[\]]/, "\\]");
@@ -16,14 +25,14 @@ function getParameterByName(name) {
 
 window.callGithub = function() {
     var github = new window.Github({
-        username: "webkhung",
-        password: "",
+        username: githubUserName,
+        password: githubPassword,
         auth: "basic"
     });
     var issues = github.getIssues('live-community', 'live_community');
-    arrIssues = [];
+    githubIssues = [];
     issues.list('open', function(err, cb_issues) {
-        arrIssues = cb_issues;
+        githubIssues = cb_issues;
     });
 }
 
@@ -34,10 +43,12 @@ window.updateJiraBoard = function() {
         $('#ghx-board-name').append("<span class='lc-error'>Select a sprint to enable issue highlighting</span>");
     }
     else {
-        $.get( "https://jira.intuit.com/rest/api/latest/search?jql=sprint%3D"+sprintID+"&fields=key,labels,summary", function( data ) {
+        $.get( "https://jira.intuit.com/rest/api/latest/search?jql=sprint%3D"+sprintID+"&fields=key,summary,labels,customfield_11703,subtasks,assignee,issuelinks&maxResults=200", function( data ) {
             var arrIssueToSort = [];
 
             $('.lc-jira-label').remove();
+
+            addSortToColumnHeader();
 
             for(var i=0; i < data.issues.length; i++){
                 var elIssue = $("div[data-issue-key='" + data.issues[i].key + "']");
@@ -45,9 +56,18 @@ window.updateJiraBoard = function() {
 
                 resetIssue(elIssue);
 
-                var labels = data.issues[i].fields.labels;
-                var summary = data.issues[i].fields.summary;
-                var prInfo = gitPullRequestLabel(summary, elIssue);
+                var jiraIssue = data.issues[i].fields;
+
+                var labels = jiraIssue.labels;
+                var summary = jiraIssue.summary;
+
+                setAttributes(elIssue, jiraIssue);
+
+
+                var prInfo = '';
+                if (githubIssues.length > 0){
+                    prInfo = gitPullRequestLabel(summary, elIssue);
+                }
                 var displayLabel = buildDisplayLabel(labels, prInfo, elIssue, arrIssueToSort);
                 addLabelToIssue(displayLabel, elIssue);
             }
@@ -61,10 +81,17 @@ window.updateJiraBoard = function() {
         }, "json");
     }
 }
-window.callGithub();
+
+
+
+if (githubUserName.length > 0 && githubPassword.length > 0) {
+    window.callGithub();
+}
+
 window.updateJiraBoard();
 
 //setInterval(function(){window.updateJiraBoard()}, 5000);
+
 
 function sortByLabelOrder(a, b) {
     return a.attr('lc-sort-order') - b.attr('lc-sort-order');
@@ -74,6 +101,29 @@ function resetIssue(elIssue){
     elIssue.attr('lc-sort-order', 0);
     elIssue.css("background-color", "");
     elIssue.css('background-image', 'none');
+}
+
+function setAttributes(elIssue, jiraIssue){
+    var label = '';
+
+    for(var j=0; j<labelTexts.length; j++){
+        if(jiraIssue.labels.indexOf(labelTexts[j]) > -1) {
+            label += (labelTexts[j] + ' ');
+            elIssue.css('background-color', labelColors[j]);
+            elIssue.attr('_labelOrder', labelOrders[j]);
+        }
+    }
+
+    var storyPoint = 0;
+    if (jiraIssue.customfield_11703) {
+        storyPoint = jiraIssue.customfield_11703;
+    }
+    var displayName = '';
+    if (jiraIssue.assignee) {
+        displayName = jiraIssue.assignee.displayName;
+    }
+    elIssue.attr('_displayName', displayName);
+    elIssue.attr('_storyPoint', storyPoint);
 }
 
 function buildDisplayLabel(labels, prInfo, elIssue, arrIssueToSort){
@@ -150,10 +200,10 @@ function pullRequest(summary){
     var str = summary.substring(summary.trim().lastIndexOf(' ') + 1)
     if((str.length == 3 || str.length == 4) && !isNaN(str)) {
         var number = parseInt(str);
-        if(arrIssues.length > 0){
-            for(var p=0; p < arrIssues.length; p++){
-                if(arrIssues[p]['number'] == number) {
-                    return arrIssues[p];
+        if(githubIssues.length > 0){
+            for(var p=0; p < githubIssues.length; p++){
+                if(githubIssues[p]['number'] == number) {
+                    return githubIssues[p];
                 }
             }
         }
@@ -162,6 +212,16 @@ function pullRequest(summary){
     return null;
 }
 
+function addSortToColumnHeader(){
+    $('#ghx-column-headers .ghx-column').each(function(){
+        var dataId = $(this).attr('data-id');
+        var sortLink = $('<a>',{
+            text: 'Sort',
+            href: "javascript:window.jiraPluginSort('" + dataId + "')"
+        });
+        $(this).append(sortLink);
+    });
+}
 
 //function gitPullRequestLabel(summary, issue){
 //    var prInfo = '';

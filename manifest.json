@@ -20,6 +20,6 @@
       "js": ["lib/base64.js", "lib/underscore-min.js", "github.js", "jquery.js", "content_script.js"]
     }
   ],
-  "web_accessible_resources": ["web.png", "script.js"],
+  "web_accessible_resources": ["web.png", "assignee.png", "priority.png", "story_points.png", "script.js"],
   "manifest_version": 2
 }

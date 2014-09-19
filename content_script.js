@@ -20,6 +20,9 @@ var pullRequestOrder = 3;
 var githubUserName = ''
 var githubPassword = ''
 
+var statusCounts = {New: 0, InProgress: 0, Blocked: 0, Verify: 0, Closed: 0, Deferred: 0};
+var statusStoryPoints = {New: 0, InProgress: 0, Blocked: 0, Verify: 0, Closed: 0, Deferred: 0};
+
 function getParameterByName(name) {
     name = name.replace(/[\[]/, "\\[").replace(/[\]]/, "\\]");
     var regex = new RegExp("[\\?&]" + name + "=([^&#]*)"),
@@ -126,6 +129,13 @@ function getJiraIssues(sprintID){
                 addLabelToIssueLeft('Hygiene', elIssue);
             }
 
+            // Status count
+            statusCounts[jiraIssue.status.name.replace(' ', '')] = statusCounts[jiraIssue.status.name.replace(' ', '')] + 1;
+
+            var storyPoint = 0;
+            if (jiraIssue.customfield_11703) {
+                statusStoryPoints[jiraIssue.status.name.replace(' ', '')] = statusStoryPoints[jiraIssue.status.name.replace(' ', '')] + jiraIssue.customfield_11703;
+            }
 
             // Attach hovercard event to each jira issue element
             elIssue.find('.ghx-issue-fields:first').hovercard({
@@ -154,6 +164,7 @@ function getJiraIssues(sprintID){
 //                addLabelToIssue(displayLabel, elIssue);
         }
 
+        addStats(statusCounts, statusStoryPoints);
         addSortToColumnHeader();
 
 //            arrIssueToSort.sort(sortByLabelOrder);
@@ -173,6 +184,34 @@ if (githubUserName.length > 0 && githubPassword.length > 0) {
 window.updateJiraBoard();
 
 //setInterval(function(){window.updateJiraBoard()}, 5000);
+
+function addStats(statusCounts, statusStoryPoints){
+
+//    var statusStoryPoints = {New: 0, InProgress: 0, Blocked: 0, Verify: 0, Closed: 0, Deferred: 0};
+    var strStatusCounts = '';
+    Object.keys(statusCounts).forEach(function (key) {
+        var value = statusCounts[key];
+        strStatusCounts += key + " : <strong>" + value + "</strong> ";
+    });
+
+    var strStatusStoryPoints = '';
+    Object.keys(statusStoryPoints).forEach(function (key) {
+        var value = statusStoryPoints[key];
+        strStatusStoryPoints += key + " : <strong>" + value + "</strong> ";
+    });
+
+//    var img = $('<div />').attr({
+//        src: chrome.extension.getURL(images[i]),
+//        width:'16',
+//        height:'16'
+//    })
+
+    $('#ghx-rabid').append(
+        "<div class='jira-status'>" +
+            "<div><strong>Number of Issues : </strong>" + strStatusCounts + "</div>" +
+            "<div><strong>Number of Story Points : </strong>" + strStatusStoryPoints + "</div></div>"
+    );
+}
 
 function toDate(string){
     var date = new Date(string);
@@ -210,7 +249,10 @@ function setAttributes(elIssue, jiraIssue, jiraIssue2){
     if (jiraIssue.assignee) {
         displayName = jiraIssue.assignee.displayName;
     }
-    var priority = jiraIssue.priority.id;
+    var priority = 5;
+    if (jiraIssue.priority) {
+        priority = jiraIssue.priority.id;
+    }
 
     elIssue.attr('_displayName', displayName);
     elIssue.attr('_storyPoint', storyPoint);
@@ -267,6 +309,12 @@ $.fn.hovercard = function(options) {
                 var elIssue = $("div[data-issue-key='" + options.relatedIssues[i] + "'].ghx-issue");
                 elIssue.css('background-color','#CCFFCC');
             }
+
+            for(var i=0; i < options.blocks.length; i++){
+                var elIssue = $("div[data-issue-key='" + options.blocks[i] + "'].ghx-issue");
+                elIssue.css('background-color','#FFB9B7');
+            }
+
             e.stopPropagation();
         },
         function(){
@@ -275,6 +323,11 @@ $.fn.hovercard = function(options) {
 
             for(var i=0; i < options.relatedIssues.length; i++){
                 var elIssue = $("div[data-issue-key='" + options.relatedIssues[i] + "'].ghx-issue");
+                elIssue.css('background-color','');
+            }
+
+            for(var i=0; i < options.blocks.length; i++){
+                var elIssue = $("div[data-issue-key='" + options.blocks[i] + "'].ghx-issue");
                 elIssue.css('background-color','');
             }
         }

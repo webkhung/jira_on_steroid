@@ -14,9 +14,9 @@ $('body').append("<div class='hovercard'></div>");
 var labelTexts = ['FailedQA','InQA','PullRequest','Blocked'];
 var labelColors = ['#f3add0','#FFFF99','#77fcfc','#dfb892']; // "#66FFFF"
 var labelOrders = [1,2,3,4]; // 3 is reserved for PullRequest
-var githubIssues = [];
 var pullRequestColor = "#77fcfc";
 var pullRequestOrder = 3;
+var githubIssues = [];
 var githubUserName = ''
 var githubPassword = ''
 
@@ -47,9 +47,9 @@ window.updateJiraBoard = function() {
     var sprintID = getParameterByName('sprint');
     var rapidViewID = getParameterByName('rapidView');
 
-    $('.lc-error').remove();
+    $('.intu-error').remove();
     if (sprintID.length == 0 && rapidViewID.length == 0) {
-//        $('#ghx-board-name').append("<span class='lc-error'>Select a sprint to enable issue highlighting</span>");
+//        $('#ghx-board-name').append("<span class='intu-error'>Select a sprint to enable issue highlighting</span>");
     }
     else {
         var apiURL = '';
@@ -70,99 +70,27 @@ function getJiraIssues(sprintID){
         "key,created,updated,status,summary,description,parent,labels,customfield_11703,customfield_14107,priority,subtasks,assignee,issuelinks&maxResults=200", function( data ) {
         var arrIssueToSort = [];
 
-        $('.lc-jira-label').remove();
+        $('.intu-jira-label .intu-jira-label-left').remove();
 
-        for(var i=0; i < data.issues.length; i++){
-            var elIssue = $("div[data-issue-key='" + data.issues[i].key + "'].ghx-issue");
-            if (elIssue.length == 0) continue; // in case the card doesn't exist on the UI
+        data.issues.forEach(function(issue) {
+            var elIssue = $("div[data-issue-key='" + issue.key + "'].ghx-issue");
+            if (elIssue.length == 0) return; // in case the card doesn't exist on the UI
 
             resetIssue(elIssue);
 
-            var jiraIssue = data.issues[i].fields;
+            var fields = issue.fields;
 
-            // Subtasks
-            var subtaskHtml = '';
-            var subtaskKeys = [];
-            for(var stIndex=0; stIndex < jiraIssue.subtasks.length; stIndex++){
-                var subtask = jiraIssue.subtasks[stIndex];
-                subtaskKeys.push(subtask.key);
-                subtaskHtml += "<p>" + subtask.key + ' ' + subtask.fields.summary + " (" + subtask.fields.status.name + ")</p>";
-            }
-            if(subtaskHtml.length > 0) subtaskHtml = '<h3>Sub tasks</h3>' + subtaskHtml;
+            setIssueAttributesTo(elIssue, fields);
 
-            // Parent
-            var parentHtml = '';
-            var parentKey = [];
-            if (jiraIssue.parent) {
-                parentKey.push(jiraIssue.parent.key);
-                parentHtml += "<p>" + jiraIssue.parent.key + ' ' + jiraIssue.parent.fields.summary + " (" + jiraIssue.parent.fields.status.name + ")</p>";
-            }
-            if(parentHtml.length > 0) parentHtml = '<h3>Parent</h3>' + parentHtml;
-
-            // Blocking and Blocked By
-            var blocking = "";
-            var blockedBy = "";
-            var blockHtml = "";
-            var blocks = [];
-            for(var ii=0; ii < jiraIssue.issuelinks.length; ii++) {
-                var issuelink = jiraIssue.issuelinks[ii];
-                if(issuelink.type.name == 'Blocks'){
-                    if(issuelink.outwardIssue) { // means blocking this key
-                        blocking += (issuelink.outwardIssue.key + ' ');
-                        blocks.push(issuelink.outwardIssue.key);
-                        blockHtml += "<p>Blocking: " + issuelink.outwardIssue.key + ' ' + issuelink.outwardIssue.fields.summary + " (" + issuelink.outwardIssue.fields.status.name + ")</p>";
-                    }
-                    else if(issuelink.inwardIssue) { // means this issue is blocked by this key
-                        blockedBy += (issuelink.inwardIssue.key) + ' ';
-                        blocks.push(issuelink.inwardIssue.key);
-                        blockHtml += "<p>Blocked By: " + issuelink.inwardIssue.key + ' ' + issuelink.inwardIssue.fields.summary + " (" + issuelink.inwardIssue.fields.status.name + ")</p>";
-                    }
-                }
-            }
-            if (blocking.length > 0) blocking = "Blocking " + blocking;
-            if (blockedBy.length > 0) blockedBy = "Blocked By " + blockedBy;
-            if(blockHtml.length > 0) blockHtml = '<h3>Block</h3>' + blockHtml;
-            addLabelToIssue(blocking + blockedBy, elIssue);
-
-            // Hygenie
-            if (jiraIssue.customfield_14107 && jiraIssue.customfield_14107[0].value == 'Yes') {
-                addLabelToIssueLeft('Hygiene', elIssue);
-            }
-
-            // Status count
-            statusCounts[jiraIssue.status.name.replace(' ', '')] = statusCounts[jiraIssue.status.name.replace(' ', '')] + 1;
-
-            var storyPoint = 0;
-            if (jiraIssue.customfield_11703) {
-                statusStoryPoints[jiraIssue.status.name.replace(' ', '')] = statusStoryPoints[jiraIssue.status.name.replace(' ', '')] + jiraIssue.customfield_11703;
-            }
-
-            // Attach hovercard event to each jira issue element
-            elIssue.find('.ghx-issue-fields:first').hovercard({
-                detailsHTML:
-                    "<h3 style='float:left'>Status</h3>" +
-                    "<div style='float:right'>Crt: " + toDate(jiraIssue.created) + " Upd: " + toDate(jiraIssue.updated) +
-                    "</div><div style='clear:both'></div>" +
-                        jiraIssue.status.name +
-                    "<h3>Description</h3>" + $(jiraIssue.description).text().substring(0, 400) +
-                        parentHtml +
-                        subtaskHtml +
-                        blockHtml,
-                width: 400,
-                relatedIssues: subtaskKeys.concat(parentKey),
-                blocks: blocks
-            });
-
-
-            setAttributes(elIssue, jiraIssue);
+            addHovercardTo(elIssue, fields);
 
 //                var prInfo = '';
 //                if (githubIssues.length > 0){
-//                    prInfo = gitPullRequestLabel(jiraIssue.summary, elIssue);
+//                    prInfo = gitPullRequestLabel(fields.summary, elIssue);
 //                }
-//                var displayLabel = buildDisplayLabel(jiraIssue.labels, prInfo, elIssue, arrIssueToSort);
-//                addLabelToIssue(displayLabel, elIssue);
-        }
+//                var displayLabel = buildDisplayLabel(fields.labels, prInfo, elIssue, arrIssueToSort);
+//                addLabelTo(elIssue, displayLabel);
+        });
 
         addStats(statusCounts, statusStoryPoints);
         addSortToColumnHeader();
@@ -186,8 +114,6 @@ window.updateJiraBoard();
 //setInterval(function(){window.updateJiraBoard()}, 5000);
 
 function addStats(statusCounts, statusStoryPoints){
-
-//    var statusStoryPoints = {New: 0, InProgress: 0, Blocked: 0, Verify: 0, Closed: 0, Deferred: 0};
     var strStatusCounts = '';
     Object.keys(statusCounts).forEach(function (key) {
         var value = statusCounts[key];
@@ -200,17 +126,90 @@ function addStats(statusCounts, statusStoryPoints){
         strStatusStoryPoints += key + " : <strong>" + value + "</strong> ";
     });
 
-//    var img = $('<div />').attr({
-//        src: chrome.extension.getURL(images[i]),
-//        width:'16',
-//        height:'16'
-//    })
-
     $('#ghx-rabid').append(
-        "<div class='jira-status'>" +
+        "<div class='intu-jira-status'>" +
             "<div><strong>Number of Issues : </strong>" + strStatusCounts + "</div>" +
             "<div><strong>Number of Story Points : </strong>" + strStatusStoryPoints + "</div></div>"
     );
+}
+
+function addHovercardTo(elIssue, fields){
+
+    // Subtasks
+    var subtaskHtml = '';
+    var subtaskKeys = [];
+
+    fields.subtasks.forEach(function(subtask) {
+        subtaskKeys.push(subtask.key);
+        subtaskHtml += "<p>" + subtask.key + ' ' + subtask.fields.summary + " (" + subtask.fields.status.name + ")</p>";
+    });
+    if(subtaskHtml.length > 0) subtaskHtml = '<h3>Sub tasks</h3>' + subtaskHtml;
+
+    // Parent
+    var parentHtml = '';
+    var parentKey = [];
+    if (fields.parent) {
+        parentKey.push(fields.parent.key);
+        parentHtml += "<p>" + fields.parent.key + ' ' + fields.parent.fields.summary + " (" + fields.parent.fields.status.name + ")</p>";
+    }
+    if(parentHtml.length > 0) parentHtml = '<h3>Parent</h3>' + parentHtml;
+
+    // Blocking and Blocked By
+    var blocking = "";
+    var blockedBy = "";
+    var blockHtml = "";
+    var blocks = [];
+
+    fields.issuelinks.forEach(function(issuelink) {
+        if(issuelink.type.name == 'Blocks'){
+            if(issuelink.outwardIssue) { // means blocking this key
+                blocking += (issuelink.outwardIssue.key + ' ');
+                blocks.push(issuelink.outwardIssue.key);
+                blockHtml += "<p>Blocking: " + issuelink.outwardIssue.key + ' ' + issuelink.outwardIssue.fields.summary + " (" + issuelink.outwardIssue.fields.status.name + ")</p>";
+            }
+            else if(issuelink.inwardIssue) { // means this issue is blocked by this key
+                blockedBy += (issuelink.inwardIssue.key) + ' ';
+                blocks.push(issuelink.inwardIssue.key);
+                blockHtml += "<p>Blocked By: " + issuelink.inwardIssue.key + ' ' + issuelink.inwardIssue.fields.summary + " (" + issuelink.inwardIssue.fields.status.name + ")</p>";
+            }
+        }
+    });
+
+    if (blocking.length > 0) blocking = "Blocking " + blocking;
+    if (blockedBy.length > 0) blockedBy = "Blocked By " + blockedBy;
+    if(blockHtml.length > 0) blockHtml = '<h3>Block</h3>' + blockHtml;
+
+
+    addLabelTo(elIssue, blocking + blockedBy);
+
+    // Hygenie
+    if (fields.customfield_14107 && fields.customfield_14107[0].value == 'Yes') {
+        addLabelTo(elIssue, 'Hygiene', 'left');
+    }
+
+    // Status count
+    statusCounts[fields.status.name.replace(' ', '')] = statusCounts[fields.status.name.replace(' ', '')] + 1;
+
+    var storyPoint = 0;
+    if (fields.customfield_11703) {
+        statusStoryPoints[fields.status.name.replace(' ', '')] = statusStoryPoints[fields.status.name.replace(' ', '')] + fields.customfield_11703;
+    }
+
+    // Attach hovercard event to each jira issue element
+    elIssue.find('.ghx-issue-fields:first').hovercard({
+        detailsHTML:
+            "<h3 style='float:left'>Status</h3>" +
+                "<div style='float:right'>Crt: " + toDate(fields.created) + " Upd: " + toDate(fields.updated) +
+                "</div><div style='clear:both'></div>" +
+                fields.status.name +
+                "<h3>Description</h3>" + $(fields.description).text().substring(0, 400) +
+                parentHtml +
+                subtaskHtml +
+                blockHtml,
+        width: 400,
+        relatedIssues: subtaskKeys.concat(parentKey),
+        blocks: blocks
+    });
 }
 
 function toDate(string){
@@ -228,31 +227,26 @@ function resetIssue(elIssue){
     elIssue.css('background-image', 'none');
 }
 
-function setAttributes(elIssue, jiraIssue, jiraIssue2){
+function setIssueAttributesTo(elIssue, fields){
 
     // Label
 //    var label = '';
 //    for(var j=0; j<labelTexts.length; j++){
-//        if(jiraIssue.labels.indexOf(labelTexts[j]) > -1) {
+//        if(fields.labels.indexOf(labelTexts[j]) > -1) {
 //            label += (labelTexts[j] + ' ');
 //            elIssue.css('background-color', labelColors[j]);
 //            elIssue.attr('_labelOrder', labelOrders[j]);
 //        }
 //    }
 
-
     var storyPoint = 0;
-    if (jiraIssue.customfield_11703) {
-        storyPoint = jiraIssue.customfield_11703;
-    }
+    if (fields.customfield_11703) storyPoint = fields.customfield_11703;
+
     var displayName = '';
-    if (jiraIssue.assignee) {
-        displayName = jiraIssue.assignee.displayName;
-    }
+    if (fields.assignee) displayName = fields.assignee.displayName;
+
     var priority = 5;
-    if (jiraIssue.priority) {
-        priority = jiraIssue.priority.id;
-    }
+    if (fields.priority) fields.priority.id;
 
     elIssue.attr('_displayName', displayName);
     elIssue.attr('_storyPoint', storyPoint);
@@ -335,17 +329,21 @@ $.fn.hovercard = function(options) {
 }
 
 
-function addLabelToIssueLeft(label, elIssue){
-    label = label.trim();
-    if (label.length > 0) {
-        elIssue.append("<div class='lc-jira-label-left'>" + label + "</div>");
-    }
-}
+//function addLabelToIssueLeft(label, elIssue){
+//    label = label.trim();
+//    if (label.length > 0) {
+//        elIssue.append("<div class='intu-jira-label-left'>" + label + "</div>");
+//    }
+//}
 
-function addLabelToIssue(label, elIssue){
+function addLabelTo(elIssue, label, position){
     label = label.trim();
     if (label.length > 0) {
-        elIssue.append("<div class='lc-jira-label'>" + label + "</div>");
+        if (position == 'left')
+            cssClass = 'intu-jira-label-left';
+        else
+            cssClass = "intu-jira-label";
+        elIssue.append("<div class='" + cssClass + "'>" + label + "</div>");
     }
 }
 
@@ -393,25 +391,30 @@ function addSortToColumnHeader(){
     $('#ghx-column-headers .ghx-column').each(function(){
         var dataId = $(this).attr('data-id');
 
-        var images =  ["assignee.png", "story_points.png", "priority.png"];
-        var titles = ["Assignee", "Story Points", "Priority"];
-        var attrs = ['_displayName', '_storyPoint', '_priority'];
-        var order = ['asc', 'desc', 'asc'];
-        var valueType = ['string', 'integer', 'integer'];
+        var sorts = {
+            assignee: {
+                image: "assignee.png", title: "Assignee", attr: "_displayName", order: "asc", valueType: "string"
+            },
+            story_points: {
+                image: "story_points.png", title: "Story Points", attr: "_storyPoint", order: "desc", valueType: "integer"
+            }
+        }
 
-        for(var i=0; i<images.length; i++){
+        for(var sortKey in sorts) {
+            sort = sorts[sortKey];
+
             var img = $('<img />').attr({
-                src: chrome.extension.getURL(images[i]),
+                src: chrome.extension.getURL(sort['image']),
                 width:'16',
                 height:'16'
             })
             var anchor = $('<a />').attr({
-                title: titles[i],
+                title: sort['titles'],
                 class: 'custom-sort',
-                href: "javascript:window.sortJiraIssues('" + dataId + "', '" + attrs[i] + "', '" + order[i] + "', '" + valueType[i] + "')"
+                href: "javascript:window.sortJiraIssues('" + dataId + "', '" + sort['attr'] + "', '" + sort['order'] + "', '" + sort['valueType'] + "')"
             });
 
             $(this).append(anchor.append(img));
-        }
+        };
     });
 }

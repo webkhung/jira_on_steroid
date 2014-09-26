@@ -1,21 +1,30 @@
-.intu-jira-label {
+.intu-label {
     position: absolute;
-    top:0px;
-    right:0px;
     font-size:11px;
     background: #fffe6a;
     padding: 0 2px;
     border: 1px soild #aaaaaa;
 }
 
-.intu-jira-label-left {
-    position: absolute;
-    bottom:1px;
+.intu-label-top-right{
+    top:0px;
+    right:0px;
+}
+
+.intu-label-bottom-left {
+    bottom:0px;
     left:5px;
-    font-size:11px;
-    background: #8cff85;
-    padding: 0 2px;
-    border: 1px soild #aaaaaa;
+    background-color: #59ff5b;
+}
+
+.intu-label-bottom-right{
+    bottom:0px;
+    right:0px;
+}
+
+.intu-label-top-left{
+    top:0px;
+    left:0px;
 }
 
 .intu-error {
@@ -25,21 +34,31 @@
 }
 
 .intu-jira-status {
-    padding: 5px;
-    border: 1px solid #A137BF;
+    padding: 0 10px;
+    border: 1px solid #0082c3;
     position: absolute;
-    top: -20px;
-    right: 10px;
-    background-color: white;
+    top: 0px;
+    left: 0px;
+    background-color: #fffeba;
+    z-index: 1;
+    font-size: 12px;
 }
-
 
 .intu-jira-status div {
     color: #999999;
 }
 
+.intu-jira-status a {
+    text-decoration: underline;
+    margin-right:10px;
+}
+
 .intu-jira-status div strong {
-    color: #A137BF;
+    color: #0082c3;
+}
+
+#intu-status-container {
+    display: none;
 }
 
 .custom-sort {
@@ -52,7 +71,7 @@
     display: none;
     position: absolute;
     width:300px;
-    padding:3px;
+    padding:5px;
     /*height: 150px;*/
     border:2px solid #0082c3;
     border-radius: 3px;
@@ -60,18 +79,19 @@
     -webkit-box-shadow:  rgba(0, 0, 0, 0.4) 0px 3px 4px;
     -moz-box-shadow:  rgba(0, 0, 0, 0.4) 0px 3px 4px;
     box-shadow:  rgba(0, 0, 0, 0.4) 0px 3px 4px;
-    /*background-color:rgba(255, 255, 255, 0.8);*/
+    /*background-color:rgba(255, 255, 186, 0.7);*/
+    z-index: 1000;
 }
-.hovercard:before {
-    content: "";
-    position: absolute;
-    bottom: 100%;
-    left: 20px;
-    border-bottom: 20px solid black;
-    border-bottom-color: inherit;
-    border-left: 20px solid transparent;
-    border-right: 20px solid transparent;
-}
+/*.hovercard:before {*/
+    /*content: "";*/
+    /*position: absolute;*/
+    /*bottom: 100%;*/
+    /*left: 20px;*/
+    /*border-bottom: 20px solid black;*/
+    /*border-bottom-color: inherit;*/
+    /*border-left: 20px solid transparent;*/
+    /*border-right: 20px solid transparent;*/
+/*}*/
 .hovercard h3{
     padding: 2px 0px;
     margin: 0 0 0 0;
@@ -88,3 +108,7 @@
     padding:2px 0px;
     margin: 0 0 0 0;
 }
+
+/*#announcement-banner, #header {*/
+    /*display: none !important;*/
+/*}*/

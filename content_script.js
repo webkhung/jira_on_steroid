@@ -1,15 +1,28 @@
 // https://jira.intuit.com/secure/RapidBoard.jspa?rapidView=7690&view=detail&selectedIssue=LCP-480&sprint=12300
 
-// Add script.js to the document
-var s = document.createElement('script');
-s.src = chrome.extension.getURL('script.js');
-(document.head||document.documentElement).appendChild(s);
-s.onload = function() {
-    s.parentNode.removeChild(s);
-};
+
+document.addEventListener("hello", function(data) {
+    alert('cs');
+    window.updateJiraBoard();
+//    chrome.runtime.sendMessage("test");
+});
+
+
+injectJsCssToDocument();
+
+
+
+// Just to test calling method in here.
+$('#work-toggle').on('click', function(){
+    alert('2222');
+    window.updateJiraBoard();
+});
+
 
 // Put hovercard to the document
 $('body').append("<div class='hovercard'></div>");
+
+$('body').append("<div class='intu-jira-status'></div>");
 
 var labelTexts = ['FailedQA','InQA','PullRequest','Blocked'];
 var labelColors = ['#f3add0','#FFFF99','#77fcfc','#dfb892']; // "#66FFFF"
@@ -48,8 +61,9 @@ window.updateJiraBoard = function() {
     var rapidViewID = getParameterByName('rapidView');
 
     $('.intu-error').remove();
+
     if (sprintID.length == 0 && rapidViewID.length == 0) {
-//        $('#ghx-board-name').append("<span class='intu-error'>Select a sprint to enable issue highlighting</span>");
+        updateLoadStatus('Not a RapidBoard Url');
     }
     else {
         var apiURL = '';
@@ -57,7 +71,12 @@ window.updateJiraBoard = function() {
             getJiraIssues(sprintID);
         }
         else {
+            updateLoadStatus('Not active sprint.  Calling JIRA API for the first sprint');
+
             $.get("https://jira.intuit.com/rest/greenhopper/1.0/xboard/work/allData/?rapidViewId=" + rapidViewID, function( data ) {
+
+                updateLoadStatus("Received sprint " + data.sprintsData.sprints[0].name);
+
                 var sprintID = data.sprintsData.sprints[0].id;
                 getJiraIssues(sprintID);
             });
@@ -66,11 +85,16 @@ window.updateJiraBoard = function() {
 }
 
 function getJiraIssues(sprintID){
+    updateLoadStatus('Calling JIRA API for issues details');
+
     $.get( "https://jira.intuit.com/rest/api/latest/search?jql=sprint%3D"+sprintID+"&fields=" +
         "key,created,updated,status,summary,description,parent,labels,customfield_11703,customfield_14107,priority,subtasks,assignee,issuelinks&maxResults=200", function( data ) {
         var arrIssueToSort = [];
 
+        updateLoadStatus('Received ' + data.issues.length + ' issues details');
+
         $('.intu-jira-label .intu-jira-label-left').remove();
+        $('.ghx-summary').removeAttr('title');
 
         data.issues.forEach(function(issue) {
             var elIssue = $("div[data-issue-key='" + issue.key + "'].ghx-issue");
@@ -84,12 +108,13 @@ function getJiraIssues(sprintID){
 
             addHovercardTo(elIssue, fields);
 
-//                var prInfo = '';
-//                if (githubIssues.length > 0){
-//                    prInfo = gitPullRequestLabel(fields.summary, elIssue);
-//                }
-//                var displayLabel = buildDisplayLabel(fields.labels, prInfo, elIssue, arrIssueToSort);
-//                addLabelTo(elIssue, displayLabel);
+            var prInfo = '';
+            if (githubIssues.length > 0){
+                prInfo = gitPullRequestLabel(fields.summary, elIssue);
+            }
+
+            var displayLabel = buildDisplayLabel2(fields.labels, prInfo, elIssue, arrIssueToSort);
+            addLabelTo(elIssue, displayLabel, 'top-right');
         });
 
         addStats(statusCounts, statusStoryPoints);
@@ -126,15 +151,23 @@ function addStats(statusCounts, statusStoryPoints){
         strStatusStoryPoints += key + " : <strong>" + value + "</strong> ";
     });
 
-    $('#ghx-rabid').append(
-        "<div class='intu-jira-status'>" +
+    $('.intu-jira-status').html(
+        "<a href='javascript:toggleStatus();'>Show Issue Status</a>" +
+            "<a href='javascript:window.maxSpace();'>Maximize Space</a>" +
+        "<a href='javascript:window.go();'>Click me</a>" +
+        "<div id='intu-status-container'>" +
             "<div><strong>Number of Issues : </strong>" + strStatusCounts + "</div>" +
-            "<div><strong>Number of Story Points : </strong>" + strStatusStoryPoints + "</div></div>"
+            "<div><strong>Number of Story Points : </strong>" + strStatusStoryPoints + "</div>" +
+        "</div>"
     );
+
+//    $('#content').append(
+//        "<div class='intu-jira-load-status'>aaaa</div>"
+//
+//    );
 }
 
 function addHovercardTo(elIssue, fields){
-
     // Subtasks
     var subtaskHtml = '';
     var subtaskKeys = [];
@@ -180,11 +213,11 @@ function addHovercardTo(elIssue, fields){
     if(blockHtml.length > 0) blockHtml = '<h3>Block</h3>' + blockHtml;
 
 
-    addLabelTo(elIssue, blocking + blockedBy);
+    addLabelTo(elIssue, blocking + blockedBy, 'bottom-right');
 
     // Hygenie
     if (fields.customfield_14107 && fields.customfield_14107[0].value == 'Yes') {
-        addLabelTo(elIssue, 'Hygiene', 'left');
+        addLabelTo(elIssue, 'Hygiene', 'bottom-left');
     }
 
     // Status count
@@ -228,7 +261,6 @@ function resetIssue(elIssue){
 }
 
 function setIssueAttributesTo(elIssue, fields){
-
     // Label
 //    var label = '';
 //    for(var j=0; j<labelTexts.length; j++){
@@ -248,9 +280,73 @@ function setIssueAttributesTo(elIssue, fields){
     var priority = 5;
     if (fields.priority) fields.priority.id;
 
+    var label = '';
+    labels = fields.labels.sort();
+    for(var j=0; j<labels.length && labels[j].indexOf('_') == 0; j++){
+        label = labels[j].substring(1).toLowerCase();
+        break;
+    }
+
+
     elIssue.attr('_displayName', displayName);
     elIssue.attr('_storyPoint', storyPoint);
     elIssue.attr('_priority', priority);
+    elIssue.attr('_label', label);
+}
+
+
+function buildDisplayLabel2(labels, prInfo, elIssue, arrIssueToSort){
+    var displayLabel = '';
+
+//    if (prInfo.length > 0) {
+//        elIssue.attr('lc-sort-order', pullRequestOrder);
+//        elIssue.css('background-color', pullRequestColor);
+//        arrIssueToSort.push($(elIssue));
+//    }
+
+    labels = labels.sort();
+    var first = true;
+
+    for(var j=0; j<labels.length && labels[j].indexOf('_') == 0 && first; j++){
+        first = false;
+        label = labels[j].substring(1).toLowerCase();
+        displayLabel += (label + ' ');
+
+        var color = stringToColour(label);
+        elIssue.css('background-color', 'rgba('+ hexToRgb(color) + ',0.4)');
+//      elIssue.attr('lc-sort-order', labelOrders[j]);
+    }
+
+    return displayLabel;
+
+//    for(var j=0; j<labelTexts.length; j++){
+//        var addToContents = false;
+//
+//        if(labels.indexOf(labelTexts[j]) > -1) {
+//            label += (labelTexts[j] + ' ');
+//            elIssue.css('background-color', labelColors[j]);
+//            elIssue.attr('lc-sort-order', labelOrders[j]);
+//
+//            if(!addToContents) {
+//                arrIssueToSort.push($(elIssue));
+//                addToContents = true;
+//            }
+//        }
+//    }
+//
+//    label = label.replace('PullRequest', 'PR');
+//
+//    if (prInfo.length > 0){
+//        if (label.indexOf('PR') >= 0){
+//            return label + ' - ' + prInfo;
+//        }
+//        else {
+//            return 'PR - ' + prInfo;
+//        }
+//    }
+//    else {
+//        return label;
+//    }
 }
 
 function buildDisplayLabel(labels, prInfo, elIssue, arrIssueToSort){
@@ -296,17 +392,17 @@ $.fn.hovercard = function(options) {
     $(this).hover(
         function(e){
             var offset = $(this).offset();
-            $('.hovercard').show().offset({'top': offset.top + 100, 'left' : offset.left});
+            $('.hovercard').show().offset({'top': offset.top + 70, 'left' : offset.left});
             $('.hovercard').html(options.detailsHTML);
 
             for(var i=0; i < options.relatedIssues.length; i++){
                 var elIssue = $("div[data-issue-key='" + options.relatedIssues[i] + "'].ghx-issue");
-                elIssue.css('background-color','#CCFFCC');
+                elIssue.find('.ghx-issue-fields:first').css('border','solid 3px red');
             }
 
             for(var i=0; i < options.blocks.length; i++){
                 var elIssue = $("div[data-issue-key='" + options.blocks[i] + "'].ghx-issue");
-                elIssue.css('background-color','#FFB9B7');
+                elIssue.find('.ghx-issue-fields:first').css('border','solid 3px red');
             }
 
             e.stopPropagation();
@@ -317,17 +413,16 @@ $.fn.hovercard = function(options) {
 
             for(var i=0; i < options.relatedIssues.length; i++){
                 var elIssue = $("div[data-issue-key='" + options.relatedIssues[i] + "'].ghx-issue");
-                elIssue.css('background-color','');
+                elIssue.find('.ghx-issue-fields:first').css('border','none');
             }
 
             for(var i=0; i < options.blocks.length; i++){
                 var elIssue = $("div[data-issue-key='" + options.blocks[i] + "'].ghx-issue");
-                elIssue.css('background-color','');
+                elIssue.find('.ghx-issue-fields:first').css('border','none');
             }
         }
     );
 }
-
 
 //function addLabelToIssueLeft(label, elIssue){
 //    label = label.trim();
@@ -339,11 +434,15 @@ $.fn.hovercard = function(options) {
 function addLabelTo(elIssue, label, position){
     label = label.trim();
     if (label.length > 0) {
-        if (position == 'left')
-            cssClass = 'intu-jira-label-left';
+        if (position == 'bottom-left')
+            cssClass = 'intu-label-bottom-left';
+        else if (position == 'bottom-right')
+            cssClass = 'intu-label-bottom-right';
+        else if (position == 'top-left')
+            cssClass = 'intu-label-top-left';
         else
-            cssClass = "intu-jira-label";
-        elIssue.append("<div class='" + cssClass + "'>" + label + "</div>");
+            cssClass = "intu-label-top-right";
+        elIssue.append("<div class='intu-label " + cssClass + "'>" + label + "</div>");
     }
 }
 
@@ -364,7 +463,7 @@ function gitPullRequestLabel(summary, elIssue){
 
 
     if (psDaysOld > 14) {
-        var imgURL = chrome.extension.getURL('web.png');
+        var imgURL = chrome.extension.getURL('images/web.png');
         elIssue.css('background-image', 'url("' + imgURL + '")');
     }
 
@@ -393,10 +492,13 @@ function addSortToColumnHeader(){
 
         var sorts = {
             assignee: {
-                image: "assignee.png", title: "Assignee", attr: "_displayName", order: "asc", valueType: "string"
+                image: "images/assignee.png", title: "Assignee", attr: "_displayName", order: "asc", valueType: "string"
             },
             story_points: {
-                image: "story_points.png", title: "Story Points", attr: "_storyPoint", order: "desc", valueType: "integer"
+                image: "images/story_points.png", title: "Story Points", attr: "_storyPoint", order: "desc", valueType: "integer"
+            },
+            label: {
+                image: "images/priority.png", title: "Label", attr: "_label", order: "desc", valueType: "string"
             }
         }
 
@@ -417,4 +519,59 @@ function addSortToColumnHeader(){
             $(this).append(anchor.append(img));
         };
     });
+}
+
+function updateLoadStatus(status){
+    $('.intu-jira-status').text(status + "...");
+}
+function hexToRgb(hex) {
+    var result;
+    result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    if (result) {
+        return parseInt(result[1], 16) + ',' + parseInt(result[2], 16) + ',' + parseInt(result[3], 16);
+    }
+}
+
+function stringToColour(str) {
+    for (var i = 0, hash = 0; i < str.length; hash = str.charCodeAt(i++) + ((hash << 5) - hash));
+    for (var i = 0, colour = "#"; i < 3; colour += ("00" + ((hash >> i++ * 8) & 0xFF).toString(16)).slice(-2));
+    return colour;
+}
+
+function main() {
+    // Allow document to call window.go()
+    window.go = function() {
+        var event = document.createEvent('Event');
+        event.initEvent('hello');
+        document.dispatchEvent(event);
+    }
+}
+
+function injectJsCssToDocument(){
+    // Inject Js to document
+    var script = document.createElement('script');
+    script.appendChild(document.createTextNode('('+ main +')();'));
+    (document.body || document.head || document.documentElement).appendChild(script);
+
+    // Inject Css to document
+    var css = '.ghx-issue .ghx-end { box-shadow: none; background: transparent; bottom: 12px !important;}',
+        head = document.head || document.getElementsByTagName('head')[0],
+        style = document.createElement('style');
+
+    style.type = 'text/css';
+    if (style.styleSheet){
+        style.styleSheet.cssText = css;
+    } else {
+        style.appendChild(document.createTextNode(css));
+    }
+    head.appendChild(style);
+
+
+    // Inject script.js to the document
+    var s = document.createElement('script');
+    s.src = chrome.extension.getURL('script.js');
+    (document.head||document.documentElement).appendChild(s);
+    s.onload = function() {
+        s.parentNode.removeChild(s);
+    };
 }

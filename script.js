@@ -24,3 +24,13 @@ window.sortJiraIssues = function(dataColumnId, attr, order, valueType) {
         mylist.append(itm);
     });
 }
+
+
+function toggleStatus(){
+    $('#intu-status-container').toggle();
+}
+
+function maxSpace(){
+    $('#announcement-banner, #header, #ghx-operations').toggle();
+    GH.SwimlaneStalker.poolStalker();
+}

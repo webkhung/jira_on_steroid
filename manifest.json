@@ -2,9 +2,9 @@
   "name": "LC JIRA BOARD",
   "description": "",
   "version": "3.1",
-  "icons": { "16": "LC.png",
-              "48": "LC.png",
-              "128": "LC.png" },
+  "icons": { "16": "images/LC.png",
+              "48": "images/LC.png",
+              "128": "images/LC.png" },
   "permissions": [
     "activeTab",
     "storage"
@@ -20,6 +20,6 @@
       "js": ["lib/base64.js", "lib/underscore-min.js", "github.js", "jquery.js", "content_script.js"]
     }
   ],
-  "web_accessible_resources": ["web.png", "assignee.png", "priority.png", "story_points.png", "script.js"],
+  "web_accessible_resources": ["images/web.png", "images/assignee.png", "images/story_points.png", "images/priority.png", "images/ajax-loader.gif", "script.js"],
   "manifest_version": 2
 }

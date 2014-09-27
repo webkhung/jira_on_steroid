@@ -1,87 +1,24 @@
-// https://jira.intuit.com/secure/RapidBoard.jspa?rapidView=7690&view=detail&selectedIssue=LCP-480&sprint=12300
-
-
-document.addEventListener("hello", function(data) {
-    alert('cs');
-    window.updateJiraBoard();
-//    chrome.runtime.sendMessage("test");
+chrome.runtime.sendMessage({method: "getLocalStorage", key: "settings"}, function(response) {
+    startPlugin(response.githubUsername, response.githubPassword, response.githubUser, response.githubRepo);
 });
 
-
-injectJsCssToDocument();
-
-
-
-// Just to test calling method in here.
-$('#work-toggle').on('click', function(){
-    alert('2222');
-    window.updateJiraBoard();
-});
-
-
-// Put hovercard to the document
-$('body').append("<div class='hovercard'></div>");
-
-$('body').append("<div class='intu-jira-status'></div>");
-
-var labelTexts = ['FailedQA','InQA','PullRequest','Blocked'];
-var labelColors = ['#f3add0','#FFFF99','#77fcfc','#dfb892']; // "#66FFFF"
-var labelOrders = [1,2,3,4]; // 3 is reserved for PullRequest
-var pullRequestColor = "#77fcfc";
-var pullRequestOrder = 3;
 var githubIssues = [];
-var githubUserName = ''
-var githubPassword = ''
-
 var statusCounts = {New: 0, InProgress: 0, Blocked: 0, Verify: 0, Closed: 0, Deferred: 0};
 var statusStoryPoints = {New: 0, InProgress: 0, Blocked: 0, Verify: 0, Closed: 0, Deferred: 0};
 
-function getParameterByName(name) {
-    name = name.replace(/[\[]/, "\\[").replace(/[\]]/, "\\]");
-    var regex = new RegExp("[\\?&]" + name + "=([^&#]*)"),
-        results = regex.exec(location.search);
-    return results == null ? "" : decodeURIComponent(results[1].replace(/\+/g, " "));
-}
+setupDocument();
 
-window.callGithub = function() {
+function getGithubIssues(githubUsername, githubPassword, githubUser, githubRepo) {
     var github = new window.Github({
-        username: githubUserName,
+        username: githubUsername,
         password: githubPassword,
         auth: "basic"
     });
-    var issues = github.getIssues('live-community', 'live_community');
+    var issues = github.getIssues(githubUser, githubRepo); // 'live-community', 'live_community'
     githubIssues = [];
-    issues.list('open', function(err, cb_issues) {
-        githubIssues = cb_issues;
+    issues.list('open', function(err, cbIssues) {
+        githubIssues = cbIssues;
     });
-}
-
-window.updateJiraBoard = function() {
-    var sprintID = getParameterByName('sprint');
-    var rapidViewID = getParameterByName('rapidView');
-
-    $('.intu-error').remove();
-
-    if (sprintID.length == 0 && rapidViewID.length == 0) {
-        updateLoadStatus('Not a RapidBoard Url');
-    }
-    else {
-        var apiURL = '';
-        if (sprintID.length > 0) {
-            getJiraIssues(sprintID);
-        }
-        else {
-            updateLoadStatus('Not active sprint.  Calling JIRA API for the first sprint');
-
-            $.get("https://jira.intuit.com/rest/greenhopper/1.0/xboard/work/allData/?rapidViewId=" + rapidViewID, function( data ) {
-
-                updateLoadStatus("Received sprint " + data.sprintsData.sprints[0].name);
-
-                var sprintID = data.sprintsData.sprints[0].id;
-                getJiraIssues(sprintID);
-            });
-        }
-    }
 }
 
 function getJiraIssues(sprintID){
@@ -104,41 +41,59 @@ function getJiraIssues(sprintID){
 
             var fields = issue.fields;
 
-            setIssueAttributesTo(elIssue, fields);
-
             addHovercardTo(elIssue, fields);
 
-            var prInfo = '';
+            var prLabel = '';
             if (githubIssues.length > 0){
-                prInfo = gitPullRequestLabel(fields.summary, elIssue);
+                prLabel = gitPullRequestLabel(fields.summary, elIssue);
+                addLabelTo(elIssue, prLabel, 'bottom-right');
             }
 
-            var displayLabel = buildDisplayLabel2(fields.labels, prInfo, elIssue, arrIssueToSort);
-            addLabelTo(elIssue, displayLabel, 'top-right');
+            addLabelTo(elIssue, issueLabel(fields.labels, prLabel, elIssue), 'top-right');
+
+            setIssueAttributesTo(elIssue, fields, prLabel);
         });
 
-        addStats(statusCounts, statusStoryPoints);
+        addPluginMenu(statusCounts, statusStoryPoints);
         addSortToColumnHeader();
-
-//            arrIssueToSort.sort(sortByLabelOrder);
-//
-//            for(var i=0; i < arrIssueToSort.length; i++){
-//                $(arrIssueToSort[i]).parent().prepend(arrIssueToSort[i]);
-//            }
 
     }, "json");
 
 }
 
-if (githubUserName.length > 0 && githubPassword.length > 0) {
-    window.callGithub();
+function updateJiraBoard() {
+    var sprintID = getParameterByName('sprint');
+    var rapidViewID = getParameterByName('rapidView');
+
+    $('.custom-sort').remove();
+
+    if (sprintID.length == 0 && rapidViewID.length == 0) {
+        updateLoadStatus('Not a RapidBoard Url');
+    }
+    else {
+        if (sprintID.length > 0) {
+            getJiraIssues(sprintID);
+        }
+        else {
+            updateLoadStatus('Not active sprint.  Calling JIRA API for the first sprint');
+
+            $.get("https://jira.intuit.com/rest/greenhopper/1.0/xboard/work/allData/?rapidViewId=" + rapidViewID, function( data ) {
+                var defaultSprint = data.sprintsData.sprints[0].id;
+                updateLoadStatus("Received sprint " + defaultSprint.name);
+                getJiraIssues(defaultSprint.id);
+            });
+        }
+    }
 }
 
-window.updateJiraBoard();
+function startPlugin(githubUsername, githubPassword, githubUser, githubRepo){
+    if (githubUsername.length > 0 && githubPassword.length > 0 && githubUser.length > 0 && githubRepo.length > 0) {
+        getGithubIssues(githubUsername, githubPassword, githubUser, githubRepo);
+    }
+    updateJiraBoard();
+}
 
-//setInterval(function(){window.updateJiraBoard()}, 5000);
-
-function addStats(statusCounts, statusStoryPoints){
+function addPluginMenu(statusCounts, statusStoryPoints){
     var strStatusCounts = '';
     Object.keys(statusCounts).forEach(function (key) {
         var value = statusCounts[key];
@@ -152,19 +107,19 @@ function addStats(statusCounts, statusStoryPoints){
     });
 
     $('.intu-jira-status').html(
-        "<a href='javascript:toggleStatus();'>Show Issue Status</a>" +
-            "<a href='javascript:window.maxSpace();'>Maximize Space</a>" +
+        "<span id='pluginMenuContent'>" +
+        "<a href='javascript:pluginToggleStatus();'>Show Issue Status</a>" +
+        "<a href='javascript:pluginMaxSpace();'>Maximize Space</a>" +
         "<a href='javascript:window.go();'>Click me</a>" +
+        "</span>" +
+
+        "<a href='javascript:pluginClose();'>X</a>" +
+
         "<div id='intu-status-container'>" +
             "<div><strong>Number of Issues : </strong>" + strStatusCounts + "</div>" +
             "<div><strong>Number of Story Points : </strong>" + strStatusStoryPoints + "</div>" +
         "</div>"
     );
-
-//    $('#content').append(
-//        "<div class='intu-jira-load-status'>aaaa</div>"
-//
-//    );
 }
 
 function addHovercardTo(elIssue, fields){
@@ -213,7 +168,7 @@ function addHovercardTo(elIssue, fields){
     if(blockHtml.length > 0) blockHtml = '<h3>Block</h3>' + blockHtml;
 
 
-    addLabelTo(elIssue, blocking + blockedBy, 'bottom-right');
+    addLabelTo(elIssue, blocking + blockedBy, 'top-left');
 
     // Hygenie
     if (fields.customfield_14107 && fields.customfield_14107[0].value == 'Yes') {
@@ -235,7 +190,7 @@ function addHovercardTo(elIssue, fields){
                 "<div style='float:right'>Crt: " + toDate(fields.created) + " Upd: " + toDate(fields.updated) +
                 "</div><div style='clear:both'></div>" +
                 fields.status.name +
-                "<h3>Description</h3>" + $(fields.description).text().substring(0, 400) +
+                "<h3>Description</h3><div class='hovercard-desc'>" + fields.description + "</div>" + // $(fields.description).text().substring(0, 400)
                 parentHtml +
                 subtaskHtml +
                 blockHtml,
@@ -245,32 +200,13 @@ function addHovercardTo(elIssue, fields){
     });
 }
 
-function toDate(string){
-    var date = new Date(string);
-    return date.getMonth() + "/" + date.getDay() + "/" + date.getFullYear();
-}
-
-function sortByLabelOrder(a, b) {
-    return a.attr('lc-sort-order') - b.attr('lc-sort-order');
-}
-
 function resetIssue(elIssue){
     elIssue.attr('lc-sort-order', 0);
     elIssue.css("background-color", "");
     elIssue.css('background-image', 'none');
 }
 
-function setIssueAttributesTo(elIssue, fields){
-    // Label
-//    var label = '';
-//    for(var j=0; j<labelTexts.length; j++){
-//        if(fields.labels.indexOf(labelTexts[j]) > -1) {
-//            label += (labelTexts[j] + ' ');
-//            elIssue.css('background-color', labelColors[j]);
-//            elIssue.attr('_labelOrder', labelOrders[j]);
-//        }
-//    }
-
+function setIssueAttributesTo(elIssue, fields, prLabel){
     var storyPoint = 0;
     if (fields.customfield_11703) storyPoint = fields.customfield_11703;
 
@@ -280,7 +216,7 @@ function setIssueAttributesTo(elIssue, fields){
     var priority = 5;
     if (fields.priority) fields.priority.id;
 
-    var label = '';
+    var label = prLabel;
     labels = fields.labels.sort();
     for(var j=0; j<labels.length && labels[j].indexOf('_') == 0; j++){
         label = labels[j].substring(1).toLowerCase();
@@ -294,15 +230,8 @@ function setIssueAttributesTo(elIssue, fields){
     elIssue.attr('_label', label);
 }
 
-
-function buildDisplayLabel2(labels, prInfo, elIssue, arrIssueToSort){
+function issueLabel(labels, prLabel, elIssue){
     var displayLabel = '';
-
-//    if (prInfo.length > 0) {
-//        elIssue.attr('lc-sort-order', pullRequestOrder);
-//        elIssue.css('background-color', pullRequestColor);
-//        arrIssueToSort.push($(elIssue));
-//    }
 
     labels = labels.sort();
     var first = true;
@@ -314,122 +243,17 @@ function buildDisplayLabel2(labels, prInfo, elIssue, arrIssueToSort){
 
         var color = stringToColour(label);
         elIssue.css('background-color', 'rgba('+ hexToRgb(color) + ',0.4)');
-//      elIssue.attr('lc-sort-order', labelOrders[j]);
+    }
+
+    if(prLabel.length > 0){
+        if (displayLabel.length == 0){
+            elIssue.css('background-color', '#77fcfc');
+        }
+        displayLabel += 'Pull Request';
     }
 
     return displayLabel;
-
-//    for(var j=0; j<labelTexts.length; j++){
-//        var addToContents = false;
-//
-//        if(labels.indexOf(labelTexts[j]) > -1) {
-//            label += (labelTexts[j] + ' ');
-//            elIssue.css('background-color', labelColors[j]);
-//            elIssue.attr('lc-sort-order', labelOrders[j]);
-//
-//            if(!addToContents) {
-//                arrIssueToSort.push($(elIssue));
-//                addToContents = true;
-//            }
-//        }
-//    }
-//
-//    label = label.replace('PullRequest', 'PR');
-//
-//    if (prInfo.length > 0){
-//        if (label.indexOf('PR') >= 0){
-//            return label + ' - ' + prInfo;
-//        }
-//        else {
-//            return 'PR - ' + prInfo;
-//        }
-//    }
-//    else {
-//        return label;
-//    }
 }
-
-function buildDisplayLabel(labels, prInfo, elIssue, arrIssueToSort){
-    var label = '';
-
-    if (prInfo.length > 0) {
-        elIssue.attr('lc-sort-order', pullRequestOrder);
-        elIssue.css('background-color', pullRequestColor);
-        arrIssueToSort.push($(elIssue));
-    }
-
-    for(var j=0; j<labelTexts.length; j++){
-        var addToContents = false;
-
-        if(labels.indexOf(labelTexts[j]) > -1) {
-            label += (labelTexts[j] + ' ');
-            elIssue.css('background-color', labelColors[j]);
-            elIssue.attr('lc-sort-order', labelOrders[j]);
-
-            if(!addToContents) {
-                arrIssueToSort.push($(elIssue));
-                addToContents = true;
-            }
-        }
-    }
-
-    label = label.replace('PullRequest', 'PR');
-
-    if (prInfo.length > 0){
-        if (label.indexOf('PR') >= 0){
-            return label + ' - ' + prInfo;
-        }
-        else {
-            return 'PR - ' + prInfo;
-        }
-    }
-    else {
-        return label;
-    }
-}
-
-$.fn.hovercard = function(options) {
-    $(this).hover(
-        function(e){
-            var offset = $(this).offset();
-            $('.hovercard').show().offset({'top': offset.top + 70, 'left' : offset.left});
-            $('.hovercard').html(options.detailsHTML);
-
-            for(var i=0; i < options.relatedIssues.length; i++){
-                var elIssue = $("div[data-issue-key='" + options.relatedIssues[i] + "'].ghx-issue");
-                elIssue.find('.ghx-issue-fields:first').css('border','solid 3px red');
-            }
-
-            for(var i=0; i < options.blocks.length; i++){
-                var elIssue = $("div[data-issue-key='" + options.blocks[i] + "'].ghx-issue");
-                elIssue.find('.ghx-issue-fields:first').css('border','solid 3px red');
-            }
-
-            e.stopPropagation();
-        },
-        function(){
-            $('.hovercard').hide();
-            $('.hovercard').html('');
-
-            for(var i=0; i < options.relatedIssues.length; i++){
-                var elIssue = $("div[data-issue-key='" + options.relatedIssues[i] + "'].ghx-issue");
-                elIssue.find('.ghx-issue-fields:first').css('border','none');
-            }
-
-            for(var i=0; i < options.blocks.length; i++){
-                var elIssue = $("div[data-issue-key='" + options.blocks[i] + "'].ghx-issue");
-                elIssue.find('.ghx-issue-fields:first').css('border','none');
-            }
-        }
-    );
-}
-
-//function addLabelToIssueLeft(label, elIssue){
-//    label = label.trim();
-//    if (label.length > 0) {
-//        elIssue.append("<div class='intu-jira-label-left'>" + label + "</div>");
-//    }
-//}
 
 function addLabelTo(elIssue, label, position){
     label = label.trim();
@@ -461,7 +285,6 @@ function gitPullRequestLabel(summary, elIssue){
     }
     var prInfo = psLabel + ' (' + psDaysOld + ' days)';
 
-
     if (psDaysOld > 14) {
         var imgURL = chrome.extension.getURL('images/web.png');
         elIssue.css('background-image', 'url("' + imgURL + '")');
@@ -491,15 +314,9 @@ function addSortToColumnHeader(){
         var dataId = $(this).attr('data-id');
 
         var sorts = {
-            assignee: {
-                image: "images/assignee.png", title: "Assignee", attr: "_displayName", order: "asc", valueType: "string"
-            },
-            story_points: {
-                image: "images/story_points.png", title: "Story Points", attr: "_storyPoint", order: "desc", valueType: "integer"
-            },
-            label: {
-                image: "images/priority.png", title: "Label", attr: "_label", order: "desc", valueType: "string"
-            }
+            assignee:       { image: "images/assignee.png", title: "Assignee", attr: "_displayName", order: "asc", valueType: "string" },
+            story_points:   { image: "images/story_points.png", title: "Story Points", attr: "_storyPoint", order: "desc", valueType: "integer" },
+            label:          { image: "images/label.png", title: "Label", attr: "_label", order: "desc", valueType: "string" }
         }
 
         for(var sortKey in sorts) {
@@ -524,19 +341,14 @@ function addSortToColumnHeader(){
 function updateLoadStatus(status){
     $('.intu-jira-status').text(status + "...");
 }
-function hexToRgb(hex) {
-    var result;
-    result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-    if (result) {
-        return parseInt(result[1], 16) + ',' + parseInt(result[2], 16) + ',' + parseInt(result[3], 16);
-    }
-}
 
-function stringToColour(str) {
-    for (var i = 0, hash = 0; i < str.length; hash = str.charCodeAt(i++) + ((hash << 5) - hash));
-    for (var i = 0, colour = "#"; i < 3; colour += ("00" + ((hash >> i++ * 8) & 0xFF).toString(16)).slice(-2));
-    return colour;
-}
+//setInterval(function(){updateJiraBoard()}, 5000);
+
+// hello will be an event sent from the document when call window.go()
+document.addEventListener("hello", function(data) {
+    alert('cs');
+    updateJiraBoard(); // chrome.runtime.sendMessage("test"); What does this do?
+});
 
 function main() {
     // Allow document to call window.go()
@@ -547,7 +359,7 @@ function main() {
     }
 }
 
-function injectJsCssToDocument(){
+function setupDocument(){
     // Inject Js to document
     var script = document.createElement('script');
     script.appendChild(document.createTextNode('('+ main +')();'));
@@ -566,7 +378,6 @@ function injectJsCssToDocument(){
     }
     head.appendChild(style);
 
-
     // Inject script.js to the document
     var s = document.createElement('script');
     s.src = chrome.extension.getURL('script.js');
@@ -574,4 +385,49 @@ function injectJsCssToDocument(){
     s.onload = function() {
         s.parentNode.removeChild(s);
     };
+
+    $('#work-toggle').on('click', function(){
+        updateJiraBoard();
+    });
+
+    $('body').append("<div class='hovercard'></div>");
+    $('body').append("<div class='intu-jira-status'></div>");
+}
+
+$.fn.hovercard = function(options) {
+    $(this).hover(
+        function(e){
+
+            var offset = $(this).offset();
+//            $('.hovercard').show().offset({'top': offset.top + 70, 'left' : offset.left});
+            $('.hovercard').show().offset({'top': $('#ghx-work').offset().top, 'left' : offset.left + $(this).width() + 50});
+            $('.hovercard').html(options.detailsHTML);
+
+            for(var i=0; i < options.relatedIssues.length; i++){
+                var elIssue = $("div[data-issue-key='" + options.relatedIssues[i] + "'].ghx-issue");
+                elIssue.find('.ghx-issue-fields:first').css('border','dotted 2px red');
+            }
+
+            for(var i=0; i < options.blocks.length; i++){
+                var elIssue = $("div[data-issue-key='" + options.blocks[i] + "'].ghx-issue");
+                elIssue.find('.ghx-issue-fields:first').css('border','dotted 2px red');
+            }
+
+            e.stopPropagation();
+        },
+        function(){
+            $('.hovercard').hide();
+            $('.hovercard').html('');
+
+            for(var i=0; i < options.relatedIssues.length; i++){
+                var elIssue = $("div[data-issue-key='" + options.relatedIssues[i] + "'].ghx-issue");
+                elIssue.find('.ghx-issue-fields:first').css('border','none');
+            }
+
+            for(var i=0; i < options.blocks.length; i++){
+                var elIssue = $("div[data-issue-key='" + options.blocks[i] + "'].ghx-issue");
+                elIssue.find('.ghx-issue-fields:first').css('border','none');
+            }
+        }
+    );
 }

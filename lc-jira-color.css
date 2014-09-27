@@ -20,11 +20,13 @@
 .intu-label-bottom-right{
     bottom:0px;
     right:0px;
+    background-color: #6EFFF0;
 }
 
 .intu-label-top-left{
     top:0px;
-    left:0px;
+    left:5px;
+    background-color: #FFBEF4;
 }
 
 .intu-error {
@@ -34,14 +36,14 @@
 }
 
 .intu-jira-status {
-    padding: 0 10px;
-    border: 1px solid #0082c3;
+    padding: 5px 10px;
+    border: 1px solid #333;
     position: absolute;
     top: 0px;
     left: 0px;
-    background-color: #fffeba;
+    background-color: yellow;
     z-index: 1;
-    font-size: 12px;
+    font-size: 13px;
 }
 
 .intu-jira-status div {
@@ -49,7 +51,8 @@
 }
 
 .intu-jira-status a {
-    text-decoration: underline;
+    color: #333;
+    text-decoration: underline !important;
     margin-right:10px;
 }
 
@@ -107,6 +110,11 @@
 .hovercard p{
     padding:2px 0px;
     margin: 0 0 0 0;
+}
+
+.hovercard-desc {
+    max-height: 400px;
+    overflow: hidden;
 }
 
 /*#announcement-banner, #header {*/

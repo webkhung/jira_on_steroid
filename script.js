@@ -26,11 +26,16 @@ window.sortJiraIssues = function(dataColumnId, attr, order, valueType) {
 }
 
 
-function toggleStatus(){
+function pluginToggleStatus(){
     $('#intu-status-container').toggle();
 }
 
-function maxSpace(){
-    $('#announcement-banner, #header, #ghx-operations').toggle();
+function pluginMaxSpace(){
+    // , #ghx-operations
+    $('#announcement-banner, #header').toggle();
     GH.SwimlaneStalker.poolStalker();
+}
+
+function pluginClose(){
+    $('#pluginMenuContent').toggle();
 }

@@ -8,6 +8,8 @@ var statusStoryPoints = {New: 0, InProgress: 0, Blocked: 0, Verify: 0, Closed: 0
 
 setupDocument();
 
+setInterval(function(){updateJiraBoard()}, 5000);
+
 function getGithubIssues(githubUsername, githubPassword, githubUser, githubRepo) {
     var github = new window.Github({
         username: githubUsername,
@@ -30,8 +32,8 @@ function getJiraIssues(sprintID){
 
         updateLoadStatus('Received ' + data.issues.length + ' issues details');
 
-        $('.intu-jira-label .intu-jira-label-left').remove();
-        $('.ghx-summary').removeAttr('title');
+        $('.intu-jira-label .intu-jira-label-left, .custom-sort').remove();
+        $('.ghx-summary').removeAttr('title'); // Dont like their <a> title so remove it.
 
         data.issues.forEach(function(issue) {
             var elIssue = $("div[data-issue-key='" + issue.key + "'].ghx-issue");
@@ -45,7 +47,7 @@ function getJiraIssues(sprintID){
 
             var prLabel = '';
             if (githubIssues.length > 0){
-                prLabel = gitPullRequestLabel(fields.summary, elIssue);
+                prLabel = pullRequestLabel(fields.summary, elIssue);
                 addLabelTo(elIssue, prLabel, 'bottom-right');
             }
 
@@ -54,7 +56,8 @@ function getJiraIssues(sprintID){
             setIssueAttributesTo(elIssue, fields, prLabel);
         });
 
-        addPluginMenu(statusCounts, statusStoryPoints);
+        setIssueStatus(statusCounts, statusStoryPoints);
+
         addSortToColumnHeader();
 
     }, "json");
@@ -62,10 +65,10 @@ function getJiraIssues(sprintID){
 }
 
 function updateJiraBoard() {
+    console.log('updateJiraBoard');
+
     var sprintID = getParameterByName('sprint');
     var rapidViewID = getParameterByName('rapidView');
-
-    $('.custom-sort').remove();
 
     if (sprintID.length == 0 && rapidViewID.length == 0) {
         updateLoadStatus('Not a RapidBoard Url');
@@ -90,10 +93,27 @@ function startPlugin(githubUsername, githubPassword, githubUser, githubRepo){
     if (githubUsername.length > 0 && githubPassword.length > 0 && githubUser.length > 0 && githubRepo.length > 0) {
         getGithubIssues(githubUsername, githubPassword, githubUser, githubRepo);
     }
+    addPluginMenu();
     updateJiraBoard();
 }
 
-function addPluginMenu(statusCounts, statusStoryPoints){
+function addPluginMenu(){
+    $('.intu-menu').html(
+        "<span id='intu-menu-load'></span>" +
+        "<span id='intu-menu-actions' style='display:none'>" +
+            "<a href='javascript:pluginToggleStatus();'>Show Issue Status</a>" +
+            "<a href='javascript:pluginMaxSpace();'>Maximize Space</a>" +
+            "<a href='javascript:window.go();'>Click me</a>" +
+        "</span>" +
+        "<a id='intu-menu-toggle' href='javascript:pluginClose();'>X</a>" +
+        "<div id='intu-status'>" +
+            "<div><strong>Number of Issues : </strong><span id='intu-status-issues'></span></div>" +
+            "<div><strong>Number of Story Points : </strong><span id='intu-status-points'></span></div>" +
+        "</div>"
+    );
+}
+
+function setIssueStatus(statusCounts, statusStoryPoints) {
     var strStatusCounts = '';
     Object.keys(statusCounts).forEach(function (key) {
         var value = statusCounts[key];
@@ -106,20 +126,13 @@ function addPluginMenu(statusCounts, statusStoryPoints){
         strStatusStoryPoints += key + " : <strong>" + value + "</strong> ";
     });
 
-    $('.intu-jira-status').html(
-        "<span id='pluginMenuContent'>" +
-        "<a href='javascript:pluginToggleStatus();'>Show Issue Status</a>" +
-        "<a href='javascript:pluginMaxSpace();'>Maximize Space</a>" +
-        "<a href='javascript:window.go();'>Click me</a>" +
-        "</span>" +
+    if($('#intu-status-issues').is(':empty')){
+        $('#intu-menu-actions').show();
+    }
 
-        "<a href='javascript:pluginClose();'>X</a>" +
-
-        "<div id='intu-status-container'>" +
-            "<div><strong>Number of Issues : </strong>" + strStatusCounts + "</div>" +
-            "<div><strong>Number of Story Points : </strong>" + strStatusStoryPoints + "</div>" +
-        "</div>"
-    );
+    $('#intu-menu-load').hide();
+    $('#intu-status-issues').html(strStatusCounts);
+    $('#intu-status-points').html(strStatusStoryPoints);
 }
 
 function addHovercardTo(elIssue, fields){
@@ -223,7 +236,6 @@ function setIssueAttributesTo(elIssue, fields, prLabel){
         break;
     }
 
-
     elIssue.attr('_displayName', displayName);
     elIssue.attr('_storyPoint', storyPoint);
     elIssue.attr('_priority', priority);
@@ -270,7 +282,7 @@ function addLabelTo(elIssue, label, position){
     }
 }
 
-function gitPullRequestLabel(summary, elIssue){
+function pullRequestLabel(summary, elIssue){
     var pr = pullRequest(summary);
     if (pr == null){
         return "";
@@ -283,7 +295,8 @@ function gitPullRequestLabel(summary, elIssue){
     if(pr['labels'].length > 0){
         psLabel = pr['labels'][0]['name'];
     }
-    var prInfo = psLabel + ' (' + psDaysOld + ' days)';
+
+    var prInfo = psLabel + ' (PR: ' + psDaysOld + ' days)';
 
     if (psDaysOld > 14) {
         var imgURL = chrome.extension.getURL('images/web.png');
@@ -339,10 +352,10 @@ function addSortToColumnHeader(){
 }
 
 function updateLoadStatus(status){
-    $('.intu-jira-status').text(status + "...");
+    if (!$('#intu-menu-actions').is(":visible")) {
+        $('#intu-menu-load').text(status + "...");
+    }
 }
-
-//setInterval(function(){updateJiraBoard()}, 5000);
 
 // hello will be an event sent from the document when call window.go()
 document.addEventListener("hello", function(data) {
@@ -386,22 +399,43 @@ function setupDocument(){
         s.parentNode.removeChild(s);
     };
 
-    $('#work-toggle').on('click', function(){
+    // Trigger updateJireBoard when the buttons / filters on the board are clicked.
+    $('#work-toggle, .js-quickfilter-button, .js-toggle-sprint').on('click', function(){
+        $('#intu-menu-actions').hide();
+        updateLoadStatus('Updating Board');
         updateJiraBoard();
     });
 
     $('body').append("<div class='hovercard'></div>");
-    $('body').append("<div class='intu-jira-status'></div>");
+    $('body').append("<div class='intu-menu'></div>");
 }
 
 $.fn.hovercard = function(options) {
+    $(this).unbind('mouseenter mouseleave');
     $(this).hover(
         function(e){
-
             var offset = $(this).offset();
-//            $('.hovercard').show().offset({'top': offset.top + 70, 'left' : offset.left});
-            $('.hovercard').show().offset({'top': $('#ghx-work').offset().top, 'left' : offset.left + $(this).width() + 50});
             $('.hovercard').html(options.detailsHTML);
+
+            var width = $('.hovercard').width();
+            var height = $('.hovercard').height();
+            var top = 0, left = 0;
+
+            if (($(this).offset().top + height/2) >  window.innerHeight){
+                top = window.innerHeight - height - 20;
+            }
+            else {
+                top = $(this).offset().top - height/2;
+            }
+
+            if( (offset.left + $(this).width() + 45 + width) > window.innerWidth){
+                left = offset.left - width - 20;
+                if (left < 0) left = offset.left + $(this).width() + 45; // ugly.... fix late.
+            }
+            else {
+                left = offset.left + $(this).width() + 45;
+            }
+            $('.hovercard').show().offset({'top': top, 'left': left});
 
             for(var i=0; i < options.relatedIssues.length; i++){
                 var elIssue = $("div[data-issue-key='" + options.relatedIssues[i] + "'].ghx-issue");

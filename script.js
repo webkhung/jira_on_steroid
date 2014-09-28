@@ -27,7 +27,7 @@ window.sortJiraIssues = function(dataColumnId, attr, order, valueType) {
 
 
 function pluginToggleStatus(){
-    $('#intu-status-container').toggle();
+    $('#intu-status').toggle();
 }
 
 function pluginMaxSpace(){
@@ -37,5 +37,12 @@ function pluginMaxSpace(){
 }
 
 function pluginClose(){
-    $('#pluginMenuContent').toggle();
+    $('#intu-menu-actions').toggle();
+
+    if ($('#intu-menu-actions').is(":visible")){
+        $('#intu-menu-toggle').html('X');
+    }
+    else {
+        $('#intu-menu-toggle').html('>');
+    }
 }

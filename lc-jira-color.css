@@ -35,8 +35,8 @@
     font-size: 14px;
 }
 
-.intu-jira-status {
-    padding: 5px 10px;
+.intu-menu {
+    padding: 5px 5px 5px 10px;
     border: 1px solid #333;
     position: absolute;
     top: 0px;
@@ -46,21 +46,21 @@
     font-size: 13px;
 }
 
-.intu-jira-status div {
+.intu-menu div {
     color: #999999;
 }
 
-.intu-jira-status a {
+.intu-menu a {
     color: #333;
     text-decoration: underline !important;
     margin-right:10px;
 }
 
-.intu-jira-status div strong {
+.intu-menu div strong {
     color: #0082c3;
 }
 
-#intu-status-container {
+#intu-status {
     display: none;
 }
 

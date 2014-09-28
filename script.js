@@ -37,12 +37,13 @@ function pluginMaxSpace(){
 }
 
 function pluginClose(){
-    $('#intu-menu-actions').toggle();
-
     if ($('#intu-menu-actions').is(":visible")){
-        $('#intu-menu-toggle').html('X');
+        $('#intu-menu-actions, #intu-status').hide();
+        $('#intu-menu-toggle').html('>');
     }
     else {
-        $('#intu-menu-toggle').html('>');
+        $('#intu-menu-actions').show();
+        $('#intu-status').hide();
+        $('#intu-menu-toggle').html('X');
     }
 }

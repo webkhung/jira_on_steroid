@@ -8,8 +8,6 @@ var statusStoryPoints = {New: 0, InProgress: 0, Blocked: 0, Verify: 0, Closed: 0
 
 setupDocument();
 
-setInterval(function(){updateJiraBoard()}, 5000);
-
 function getGithubIssues(githubUsername, githubPassword, githubUser, githubRepo) {
     var github = new window.Github({
         username: githubUsername,
@@ -28,7 +26,6 @@ function getJiraIssues(sprintID){
 
     $.get( "https://jira.intuit.com/rest/api/latest/search?jql=sprint%3D"+sprintID+"&fields=" +
         "key,created,updated,status,summary,description,parent,labels,customfield_11703,customfield_14107,priority,subtasks,assignee,issuelinks&maxResults=200", function( data ) {
-        var arrIssueToSort = [];
 
         updateLoadStatus('Received ' + data.issues.length + ' issues details');
 
@@ -59,13 +56,13 @@ function getJiraIssues(sprintID){
         setIssueStatus(statusCounts, statusStoryPoints);
 
         addSortToColumnHeader();
-
     }, "json");
 
 }
 
 function updateJiraBoard() {
     console.log('updateJiraBoard');
+    resetIssueStatus();
 
     var sprintID = getParameterByName('sprint');
     var rapidViewID = getParameterByName('rapidView');
@@ -76,14 +73,18 @@ function updateJiraBoard() {
     else {
         if (sprintID.length > 0) {
             getJiraIssues(sprintID);
+            setTimeout(function(){updateJiraBoard()}, 7000);
         }
         else {
             updateLoadStatus('Not active sprint.  Calling JIRA API for the first sprint');
 
             $.get("https://jira.intuit.com/rest/greenhopper/1.0/xboard/work/allData/?rapidViewId=" + rapidViewID, function( data ) {
-                var defaultSprint = data.sprintsData.sprints[0].id;
-                updateLoadStatus("Received sprint " + defaultSprint.name);
-                getJiraIssues(defaultSprint.id);
+                for(var i=0; i < data.sprintsData.sprints.length; i++){
+                    var sprint = data.sprintsData.sprints[i];
+                    updateLoadStatus("Get issues in sprint " + sprint.name);
+                    getJiraIssues(sprint.id);
+                }
+                setTimeout(function(){updateJiraBoard()}, 7000);
             });
         }
     }
@@ -133,6 +134,11 @@ function setIssueStatus(statusCounts, statusStoryPoints) {
     $('#intu-menu-load').hide();
     $('#intu-status-issues').html(strStatusCounts);
     $('#intu-status-points').html(strStatusStoryPoints);
+}
+
+function resetIssueStatus(){
+    statusCounts = {New: 0, InProgress: 0, Blocked: 0, Verify: 0, Closed: 0, Deferred: 0};
+    statusStoryPoints = {New: 0, InProgress: 0, Blocked: 0, Verify: 0, Closed: 0, Deferred: 0};
 }
 
 function addHovercardTo(elIssue, fields){
@@ -400,8 +406,12 @@ function setupDocument(){
     };
 
     // Trigger updateJireBoard when the buttons / filters on the board are clicked.
-    $('#work-toggle, .js-quickfilter-button, .js-toggle-sprint').on('click', function(){
-        $('#intu-menu-actions').hide();
+    // These don't work .js-quickfilter-button, .js-sprintfilter
+    $('#work-toggle').on('click', function(){
+        $('#intu-status-issues').html('');
+        $('#intu-menu-load').show();
+        $('#intu-menu-actions, #intu-status').hide();
+
         updateLoadStatus('Updating Board');
         updateJiraBoard();
     });

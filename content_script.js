@@ -33,7 +33,7 @@ function getJiraIssues(sprintID){
         $('.ghx-summary').removeAttr('title'); // Dont like their <a> title so remove it.
 
         data.issues.forEach(function(issue) {
-            var elIssue = $("div[data-issue-key='" + issue.key + "'].ghx-issue");
+            var elIssue = $("div[data-issue-key='" + issue.key + "'].ghx-issue, div[data-issue-key='" + issue.key + "'].ghx-issue-compact").first();
             if (elIssue.length == 0) return; // in case the card doesn't exist on the UI
 
             resetIssue(elIssue);
@@ -73,7 +73,7 @@ function updateJiraBoard() {
     else {
         if (sprintID.length > 0) {
             getJiraIssues(sprintID);
-            setTimeout(function(){updateJiraBoard()}, 7000);
+//            setTimeout(function(){updateJiraBoard()}, 7000);
         }
         else {
             updateLoadStatus('Not active sprint.  Calling JIRA API for the first sprint');
@@ -84,7 +84,7 @@ function updateJiraBoard() {
                     updateLoadStatus("Get issues in sprint " + sprint.name);
                     getJiraIssues(sprint.id);
                 }
-                setTimeout(function(){updateJiraBoard()}, 7000);
+//                setTimeout(function(){updateJiraBoard()}, 7000);
             });
         }
     }
@@ -202,13 +202,20 @@ function addHovercardTo(elIssue, fields){
         statusStoryPoints[fields.status.name.replace(' ', '')] = statusStoryPoints[fields.status.name.replace(' ', '')] + fields.customfield_11703;
     }
 
+    // This is on Plan view. Add summary
+    var summaryHtml = '';
+    if (elIssue.hasClass('ghx-issue-compact')){
+        summaryHtml = "<h3>Summary</h3>" + fields.summary;
+    }
+
     // Attach hovercard event to each jira issue element
-    elIssue.find('.ghx-issue-fields:first').hovercard({
+    elIssue.find('.ghx-issue-fields:first, .ghx-key').first().hovercard({
         detailsHTML:
             "<h3 style='float:left'>Status</h3>" +
                 "<div style='float:right'>Crt: " + toDate(fields.created) + " Upd: " + toDate(fields.updated) +
                 "</div><div style='clear:both'></div>" +
                 fields.status.name +
+                summaryHtml +
                 "<h3>Description</h3><div class='hovercard-desc'>" + fields.description + "</div>" + // $(fields.description).text().substring(0, 400)
                 parentHtml +
                 subtaskHtml +
@@ -431,6 +438,7 @@ $.fn.hovercard = function(options) {
             var height = $('.hovercard').height();
             var top = 0, left = 0;
 
+            // Top
             if (($(this).offset().top + height/2) >  window.innerHeight){
                 top = window.innerHeight - height - 20;
             }
@@ -438,13 +446,20 @@ $.fn.hovercard = function(options) {
                 top = $(this).offset().top - height/2;
             }
 
-            if( (offset.left + $(this).width() + 45 + width) > window.innerWidth){
-                left = offset.left - width - 20;
-                if (left < 0) left = offset.left + $(this).width() + 45; // ugly.... fix late.
+            // Left - different cases for plan view and work view
+            if ($(this).hasClass('ghx-key')){
+                left = offset.left + $(this).width() + 10;
             }
             else {
-                left = offset.left + $(this).width() + 45;
+                if( (offset.left + $(this).width() + 45 + width) > window.innerWidth){
+                    left = offset.left - width - 20;
+                    if (left < 0) left = offset.left + $(this).width() + 45; // ugly.... fix late.
+                }
+                else {
+                    left = offset.left + $(this).width() + 45;
+                }
             }
+
             $('.hovercard').show().offset({'top': top, 'left': left});
 
             for(var i=0; i < options.relatedIssues.length; i++){

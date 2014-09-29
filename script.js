@@ -31,9 +31,22 @@ function pluginToggleStatus(){
 }
 
 function pluginMaxSpace(){
-    // , #ghx-operations
-    $('#announcement-banner, #header').toggle();
+    var allHeight = $('#announcement-banner').height() + $('header').height() + $('#ghx-operations').height();
+
+    $('#announcement-banner, #header, #ghx-operations').toggle();
     GH.SwimlaneStalker.poolStalker();
+
+
+    var oldHeight = $('#ghx-work').css('height');
+    var iOldHeight = parseInt(oldHeight.substring(0, oldHeight.length - 2));
+
+    if ($('#announcement-banner').is(":visible")){
+        var allHeight = $('#announcement-banner').height() + $('header').height() + $('#ghx-operations').height();
+        $('#ghx-report, #ghx-work, #ghx-plan').css('height', iOldHeight - allHeight);
+    }
+    else {
+        $('#ghx-report, #ghx-work, #ghx-plan').css('height', iOldHeight + allHeight);
+    }
 }
 
 function pluginClose(){

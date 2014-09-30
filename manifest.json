@@ -1,10 +1,10 @@
 {
-  "name": "LC JIRA BOARD",
+  "name": "JIRA on Steroid",
   "description": "",
-  "version": "3.1",
-  "icons": { "16": "images/LC.png",
-              "48": "images/LC.png",
-              "128": "images/LC.png" },
+  "version": "1",
+  "icons": { "16": "images/jira16.png",
+              "48": "images/jira48.png",
+              "128": "images/jira128.png" },
   "permissions": [
     "activeTab",
     "storage"

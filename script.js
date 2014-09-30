@@ -50,12 +50,12 @@ function pluginMaxSpace(){
 }
 
 function pluginClose(){
-    if ($('#intu-menu-actions').is(":visible")){
-        $('#intu-menu-actions, #intu-status').hide();
+    if ($('#intu-menu-toggle').html() == 'X'){
+        $('#intu-menu-container').hide();
         $('#intu-menu-toggle').html('>');
     }
-    else {
-        $('#intu-menu-actions').show();
+    else { // '>'
+        $('#intu-menu-container').show();
         $('#intu-status').hide();
         $('#intu-menu-toggle').html('X');
     }

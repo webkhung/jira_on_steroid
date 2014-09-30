@@ -24,12 +24,12 @@ function getGithubIssues(githubUsername, githubPassword, githubUser, githubRepo)
 function getJiraIssues(sprintID){
     updateLoadStatus('Calling JIRA API for issues details');
 
-    $.get( "https://jira.intuit.com/rest/api/latest/search?jql=sprint%3D"+sprintID+"&fields=" +
+    $.get("https://jira.intuit.com/rest/api/latest/search?jql=sprint%3D"+sprintID+"&fields=" +
         "key,created,updated,status,summary,description,parent,labels,customfield_11703,customfield_14107,priority,subtasks,assignee,issuelinks&maxResults=200", function( data ) {
 
         updateLoadStatus('Received ' + data.issues.length + ' issues details');
 
-        $('.intu-jira-label .intu-jira-label-left, .custom-sort').remove();
+        $('.intu-jira-label .intu-jira-label-left, .custom-sort, .intu-label, .intu-label-top-right, .intu-label-bottom-left, .intu-label-bottom-right, .intu-label-top-left').remove();
         $('.ghx-summary').removeAttr('title'); // Dont like their <a> title so remove it.
 
         data.issues.forEach(function(issue) {
@@ -44,7 +44,7 @@ function getJiraIssues(sprintID){
 
             var prLabel = '';
             if (githubIssues.length > 0){
-                prLabel = pullRequestLabel(fields.summary, elIssue);
+                prLabel = pullRequestLabel(issue.key, elIssue);
                 addLabelTo(elIssue, prLabel, 'bottom-right');
             }
 
@@ -56,7 +56,10 @@ function getJiraIssues(sprintID){
         setIssueStatus(statusCounts, statusStoryPoints);
 
         addSortToColumnHeader();
-    }, "json");
+    }, "json")
+    .fail(function() {
+        updateLoadStatus('Error calling JIRA search Api"', true);
+    });
 
 }
 
@@ -73,7 +76,7 @@ function updateJiraBoard() {
     else {
         if (sprintID.length > 0) {
             getJiraIssues(sprintID);
-//            setTimeout(function(){updateJiraBoard()}, 7000);
+            setTimeout(function(){updateJiraBoard()}, 8000);
         }
         else {
             updateLoadStatus('Not active sprint.  Calling JIRA API for the first sprint');
@@ -84,7 +87,13 @@ function updateJiraBoard() {
                     updateLoadStatus("Get issues in sprint " + sprint.name);
                     getJiraIssues(sprint.id);
                 }
-//                setTimeout(function(){updateJiraBoard()}, 7000);
+
+                if(data.sprintsData.sprints.length == 1) {
+                    setTimeout(function(){updateJiraBoard()}, 8000);
+                }
+            })
+            .fail(function() {
+                updateLoadStatus('Error calling JIRA greenhopper Api"', true);
             });
         }
     }
@@ -99,13 +108,16 @@ function startPlugin(githubUsername, githubPassword, githubUser, githubRepo){
 }
 
 function addPluginMenu(){
-    $('.intu-menu').html(
+    $('#intu-menu').html(
+        "<span id='intu-menu-container'>" +
         "<span id='intu-menu-load'></span>" +
+        "<span id='intu-menu-error'></span>" +
         "<span id='intu-menu-actions' style='display:none'>" +
             "<a href='javascript:pluginToggleStatus();'>Show Issue Status</a>" +
             "<a href='javascript:pluginMaxSpace();'>Maximize Space</a>" +
-            "<a href='javascript:window.go();'>Click me</a>" +
         "</span>" +
+        "</span>" +
+//        "<a href='javascript:window.go();'>Click me</a>" +
         "<a id='intu-menu-toggle' href='javascript:pluginClose();'>X</a>" +
         "<div id='intu-status'>" +
             "<div><strong>Number of Issues : </strong><span id='intu-status-issues'></span></div>" +
@@ -272,7 +284,7 @@ function issueLabel(labels, prLabel, elIssue){
 
     if(prLabel.length > 0){
         if (displayLabel.length == 0){
-            elIssue.css('background-color', '#77fcfc');
+            elIssue.css('background-color', '#C9FEFE');
         }
         displayLabel += 'Pull Request';
     }
@@ -295,8 +307,8 @@ function addLabelTo(elIssue, label, position){
     }
 }
 
-function pullRequestLabel(summary, elIssue){
-    var pr = pullRequest(summary);
+function pullRequestLabel(issueKey, elIssue){
+    var pr = pullRequest(issueKey);
     if (pr == null){
         return "";
     }
@@ -311,7 +323,7 @@ function pullRequestLabel(summary, elIssue){
 
     var prInfo = psLabel + ' (PR: ' + psDaysOld + ' days)';
 
-    if (psDaysOld > 14) {
+    if (psDaysOld > 10) {
         var imgURL = chrome.extension.getURL('images/web.png');
         elIssue.css('background-image', 'url("' + imgURL + '")');
     }
@@ -319,15 +331,11 @@ function pullRequestLabel(summary, elIssue){
     return prInfo;
 }
 
-function pullRequest(summary){
-    var str = summary.substring(summary.trim().lastIndexOf(' ') + 1)
-    if((str.length == 3 || str.length == 4) && !isNaN(str)) {
-        var number = parseInt(str);
-        if(githubIssues.length > 0){
-            for(var p=0; p < githubIssues.length; p++){
-                if(githubIssues[p]['number'] == number) {
-                    return githubIssues[p];
-                }
+function pullRequest(issueKey){
+    if(githubIssues.length > 0){
+        for(var p=0; p < githubIssues.length; p++){
+            if(githubIssues[p]['title'].indexOf(issueKey) >= 0) {
+                return githubIssues[p];
             }
         }
     }
@@ -364,9 +372,15 @@ function addSortToColumnHeader(){
     });
 }
 
-function updateLoadStatus(status){
-    if (!$('#intu-menu-actions').is(":visible")) {
-        $('#intu-menu-load').text(status + "...");
+function updateLoadStatus(status, error){
+    if (error){
+        $('#intu-menu-error').text(status);
+    }
+    else {
+        $('#intu-menu-error').text('');
+        if (!$('#intu-menu-actions').is(":visible")) {
+            $('#intu-menu-load').text(status + "...");
+        }
     }
 }
 
@@ -424,7 +438,7 @@ function setupDocument(){
     });
 
     $('body').append("<div class='hovercard'></div>");
-    $('body').append("<div class='intu-menu'></div>");
+    $('body').append("<div id='intu-menu'></div>");
 }
 
 $.fn.hovercard = function(options) {

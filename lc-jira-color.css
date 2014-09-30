@@ -1,14 +1,14 @@
 .intu-label {
     position: absolute;
-    font-size:11px;
-    background: #fffe6a;
+    font-size:10px;
     padding: 0 2px;
     border: 1px soild #aaaaaa;
 }
 
-.intu-label-top-right{
+.intu-label-top-right {
     top:0px;
     right:0px;
+    background: #fffe6a;
 }
 
 .intu-label-bottom-left {
@@ -17,25 +17,19 @@
     background-color: #59ff5b;
 }
 
-.intu-label-bottom-right{
+.intu-label-bottom-right {
     bottom:0px;
     right:0px;
-    background-color: #6EFFF0;
+    color:#FF6666;
 }
 
-.intu-label-top-left{
+.intu-label-top-left {
     top:0px;
     left:5px;
     background-color: #FFBEF4;
 }
 
-.intu-error {
-    padding-left: 10px;
-    color: red;
-    font-size: 14px;
-}
-
-.intu-menu {
+#intu-menu {
     padding: 5px 5px 5px 10px;
     border: 1px solid #333;
     position: absolute;
@@ -46,18 +40,22 @@
     font-size: 13px;
 }
 
-.intu-menu div {
+#intu-menu div {
     color: #999999;
 }
 
-.intu-menu a {
+#intu-menu a {
     color: #333;
     text-decoration: underline !important;
     margin-right:10px;
 }
 
-.intu-menu div strong {
+#intu-menu div strong {
     color: #0082c3;
+}
+
+#intu-menu-error {
+    color: red;
 }
 
 #intu-status {
@@ -85,16 +83,6 @@
     /*background-color:rgba(255, 255, 186, 0.7);*/
     z-index: 1000;
 }
-/*.hovercard:before {*/
-    /*content: "";*/
-    /*position: absolute;*/
-    /*bottom: 100%;*/
-    /*left: 20px;*/
-    /*border-bottom: 20px solid black;*/
-    /*border-bottom-color: inherit;*/
-    /*border-left: 20px solid transparent;*/
-    /*border-right: 20px solid transparent;*/
-/*}*/
 .hovercard h3{
     padding: 2px 0px;
     margin: 0 0 0 0;
@@ -116,7 +104,3 @@
     max-height: 400px;
     overflow: hidden;
 }
-
-/*#announcement-banner, #header {*/
-    /*display: none !important;*/
-/*}*/

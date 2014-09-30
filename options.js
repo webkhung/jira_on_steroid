@@ -1,8 +1,8 @@
 function loadOptions() {
     document.getElementById("githubUsername").value = localStorage["githubUsername"] || '';
     document.getElementById("githubPassword").value = localStorage["githubPassword"] || '';
-    document.getElementById("githubUser").value = localStorage["githubUser"] || '';
-    document.getElementById("githubRepo").value = localStorage["githubRepo"] || '';
+    document.getElementById("githubUser").value = localStorage["githubUser"] || 'live-community';
+    document.getElementById("githubRepo").value = localStorage["githubRepo"] || 'live_community';
 
 }
 

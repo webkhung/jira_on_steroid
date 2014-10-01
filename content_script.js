@@ -29,7 +29,8 @@ function getJiraIssues(sprintID){
 
         updateLoadStatus('Received ' + data.issues.length + ' issues details');
 
-        $('.intu-jira-label .intu-jira-label-left, .custom-sort, .intu-label, .intu-label-top-right, .intu-label-bottom-left, .intu-label-bottom-right, .intu-label-top-left').remove();
+        $('.custom-sort').remove();
+//        $('.custom-sort, .intu-label, .intu-label-top-right, .intu-label-bottom-left, .intu-label-bottom-right, .intu-label-top-left').remove();
         $('.ghx-summary').removeAttr('title'); // Dont like their <a> title so remove it.
 
         data.issues.forEach(function(issue) {
@@ -88,8 +89,8 @@ function updateJiraBoard() {
                     getJiraIssues(sprint.id);
                 }
 
-                if(data.sprintsData.sprints.length == 1) {
-                    setTimeout(function(){updateJiraBoard()}, 8000);
+                if(data.sprintsData.sprints.length <= 3) {
+                    setTimeout(function(){updateJiraBoard()}, 12000);
                 }
             })
             .fail(function() {
@@ -293,6 +294,8 @@ function issueLabel(labels, prLabel, elIssue){
 }
 
 function addLabelTo(elIssue, label, position){
+    elIssue.removeClass('.intu-label, .intu-label-top-right, .intu-label-bottom-left, .intu-label-bottom-right, .intu-label-top-left');
+
     label = label.trim();
     if (label.length > 0) {
         if (position == 'bottom-left')

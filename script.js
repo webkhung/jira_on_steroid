@@ -27,6 +27,7 @@ window.sortJiraIssues = function(dataColumnId, attr, order, valueType) {
 
 
 function pluginToggleStatus(){
+    $('#intu-help').hide();
     $('#intu-status').toggle();
 }
 
@@ -59,4 +60,9 @@ function pluginClose(){
         $('#intu-status').hide();
         $('#intu-menu-toggle').html('X');
     }
+}
+
+function pluginHelp(){
+    $('#intu-status').hide();
+    $('#intu-help').toggle();
 }

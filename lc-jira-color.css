@@ -30,18 +30,18 @@
 }
 
 #intu-menu {
-    padding: 5px 5px 5px 10px;
+    padding: 5px;
     border: 1px solid #333;
     position: absolute;
     top: 0px;
     left: 0px;
-    background-color: yellow;
+    background-color: #FFFE6A;
     z-index: 1;
     font-size: 13px;
 }
 
 #intu-menu div {
-    color: #999999;
+    color: #5D5D5D;
 }
 
 #intu-menu a {
@@ -51,14 +51,14 @@
 }
 
 #intu-menu div strong {
-    color: #0082c3;
+    color: #0978C3;
 }
 
 #intu-menu-error {
     color: red;
 }
 
-#intu-status {
+#intu-status, #intu-help {
     display: none;
 }
 

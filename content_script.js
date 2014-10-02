@@ -5,8 +5,14 @@ chrome.runtime.sendMessage({method: "getLocalStorage", key: "settings"}, functio
 var githubIssues = [];
 var statusCounts = {New: 0, InProgress: 0, Blocked: 0, Verify: 0, Closed: 0, Deferred: 0};
 var statusStoryPoints = {New: 0, InProgress: 0, Blocked: 0, Verify: 0, Closed: 0, Deferred: 0};
+var lastUrl = window.location.href;
 
-setupDocument();
+function checkUrlChanged(){
+    if(window.location.href != lastUrl){
+        lastUrl = window.location.href;
+        setTimeout(function(){updateJiraBoard()}, 5000);
+    }
+}
 
 function getGithubIssues(githubUsername, githubPassword, githubUser, githubRepo) {
     var github = new window.Github({
@@ -30,7 +36,6 @@ function getJiraIssues(sprintID){
         updateLoadStatus('Received ' + data.issues.length + ' issues details');
 
         $('.custom-sort').remove();
-//        $('.custom-sort, .intu-label, .intu-label-top-right, .intu-label-bottom-left, .intu-label-bottom-right, .intu-label-top-left').remove();
         $('.ghx-summary').removeAttr('title'); // Dont like their <a> title so remove it.
 
         data.issues.forEach(function(issue) {
@@ -77,7 +82,6 @@ function updateJiraBoard() {
     else {
         if (sprintID.length > 0) {
             getJiraIssues(sprintID);
-            setTimeout(function(){updateJiraBoard()}, 8000);
         }
         else {
             updateLoadStatus('Not active sprint.  Calling JIRA API for the first sprint');
@@ -88,10 +92,6 @@ function updateJiraBoard() {
                     updateLoadStatus("Get issues in sprint " + sprint.name);
                     getJiraIssues(sprint.id);
                 }
-
-                if(data.sprintsData.sprints.length <= 3) {
-                    setTimeout(function(){updateJiraBoard()}, 12000);
-                }
             })
             .fail(function() {
                 updateLoadStatus('Error calling JIRA greenhopper Api"', true);
@@ -101,11 +101,18 @@ function updateJiraBoard() {
 }
 
 function startPlugin(githubUsername, githubPassword, githubUser, githubRepo){
+
+    setupDocument();
+
     if (githubUsername.length > 0 && githubPassword.length > 0 && githubUser.length > 0 && githubRepo.length > 0) {
         getGithubIssues(githubUsername, githubPassword, githubUser, githubRepo);
     }
+
     addPluginMenu();
+
     updateJiraBoard();
+
+    setInterval(function(){checkUrlChanged()}, 3000);
 }
 
 function addPluginMenu(){
@@ -114,15 +121,28 @@ function addPluginMenu(){
         "<span id='intu-menu-load'></span>" +
         "<span id='intu-menu-error'></span>" +
         "<span id='intu-menu-actions' style='display:none'>" +
-            "<a href='javascript:pluginToggleStatus();'>Show Issue Status</a>" +
+            "<a href='javascript:pluginToggleStatus();'>Issue Status</a>" +
             "<a href='javascript:pluginMaxSpace();'>Maximize Space</a>" +
+            "<a href='javascript:pluginHelp();'>Help</a>" +
         "</span>" +
         "</span>" +
 //        "<a href='javascript:window.go();'>Click me</a>" +
-        "<a id='intu-menu-toggle' href='javascript:pluginClose();'>X</a>" +
+        "<a id='intu-menu-toggle' style='text-decoration: none' href='javascript:pluginClose();'>X</a>" +
         "<div id='intu-status'>" +
             "<div><strong>Number of Issues : </strong><span id='intu-status-issues'></span></div>" +
             "<div><strong>Number of Story Points : </strong><span id='intu-status-points'></span></div>" +
+        "</div>" +
+        "<div id='intu-help'>" +
+            "<br><strong>Label</strong><br>" +
+            "Any JIRA labels that started with underscore “_” is displayed on the top right corner of the issue. e.g. \"_InQA\", \"_FailedQA\"<br>" +
+            "<strong>Sub tasks, blocking / blocked tasks</strong><br>" +
+            "Any sub tasks and blocking/blocked by tasks is displayed on the top left corner of the issue.<br>" +
+            "<strong>Hygiene</strong><br>" +
+            "If the hygiene checkbox is checked, a “Hygiene” label is displayed on the bottom left corner of the issue.<br>" +
+            "<strong>Github pull request</strong><br>" +
+            "If you use Github to track pull requests, enter the Github info in the option page, and put the Jira issue number to the pull request title.<br>The plugin would display the pull request label on the bottom right corner of the issue.<br>" +
+            "<br><strong>Sorting</strong><br>" +
+            "This plugin supports sorted by users, story points, and labels." +
         "</div>"
     );
 }
@@ -294,7 +314,7 @@ function issueLabel(labels, prLabel, elIssue){
 }
 
 function addLabelTo(elIssue, label, position){
-    elIssue.removeClass('.intu-label, .intu-label-top-right, .intu-label-bottom-left, .intu-label-bottom-right, .intu-label-top-left');
+    elIssue.find('div').remove('.intu-label, .intu-label-top-right, .intu-label-bottom-left, .intu-label-bottom-right, .intu-label-top-left');
 
     label = label.trim();
     if (label.length > 0) {

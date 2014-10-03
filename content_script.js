@@ -203,20 +203,22 @@ function addHovercardTo(elIssue, fields){
     var blockHtml = "";
     var blocks = [];
 
-    fields.issuelinks.forEach(function(issuelink) {
-        if(issuelink.type.name == 'Blocks'){
-            if(issuelink.outwardIssue) { // means blocking this key
-                blocking += (issuelink.outwardIssue.key + ' ');
-                blocks.push(issuelink.outwardIssue.key);
-                blockHtml += "<p>Blocking: " + issuelink.outwardIssue.key + ' ' + issuelink.outwardIssue.fields.summary + " (" + issuelink.outwardIssue.fields.status.name + ")</p>";
+    if(fields.issuelinks) {
+        fields.issuelinks.forEach(function(issuelink) {
+            if(issuelink.type.name == 'Blocks'){
+                if(issuelink.outwardIssue) { // means blocking this key
+                    blocking += (issuelink.outwardIssue.key + ' ');
+                    blocks.push(issuelink.outwardIssue.key);
+                    blockHtml += "<p>Blocking: " + issuelink.outwardIssue.key + ' ' + issuelink.outwardIssue.fields.summary + " (" + issuelink.outwardIssue.fields.status.name + ")</p>";
+                }
+                else if(issuelink.inwardIssue) { // means this issue is blocked by this key
+                    blockedBy += (issuelink.inwardIssue.key) + ' ';
+                    blocks.push(issuelink.inwardIssue.key);
+                    blockHtml += "<p>Blocked By: " + issuelink.inwardIssue.key + ' ' + issuelink.inwardIssue.fields.summary + " (" + issuelink.inwardIssue.fields.status.name + ")</p>";
+                }
             }
-            else if(issuelink.inwardIssue) { // means this issue is blocked by this key
-                blockedBy += (issuelink.inwardIssue.key) + ' ';
-                blocks.push(issuelink.inwardIssue.key);
-                blockHtml += "<p>Blocked By: " + issuelink.inwardIssue.key + ' ' + issuelink.inwardIssue.fields.summary + " (" + issuelink.inwardIssue.fields.status.name + ")</p>";
-            }
-        }
-    });
+        });
+    }
 
     if (blocking.length > 0) blocking = "Blocking " + blocking;
     if (blockedBy.length > 0) blockedBy = "Blocked By " + blockedBy;
@@ -372,6 +374,11 @@ function pullRequest(issueKey){
 }
 
 function addSortToColumnHeader(){
+    if ($('.ghx-swimlane').length > 1) {
+        $('.custom-sort').remove();
+        return;
+    }
+
     $('#ghx-column-headers .ghx-column').each(function(){
         var dataId = $(this).attr('data-id');
 

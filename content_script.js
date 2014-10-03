@@ -86,14 +86,19 @@ function updateJiraBoard() {
             updateLoadStatus('Not active sprint.  Calling JIRA API for the first sprint');
 
             $.get("https://jira.intuit.com/rest/greenhopper/1.0/xboard/work/allData/?rapidViewId=" + rapidViewID, function( data ) {
-                for(var i=0; i < data.sprintsData.sprints.length; i++){
-                    var sprint = data.sprintsData.sprints[i];
-                    updateLoadStatus("Get issues in sprint " + sprint.name);
-                    getJiraIssues(sprint.id);
+                if (data.sprintsData.sprints.length > 3){
+                    updateLoadStatus('No active sprint.  Please select a sprint first.', true);
+                }
+                else {
+                    for(var i=0; i < data.sprintsData.sprints.length; i++){
+                        var sprint = data.sprintsData.sprints[i];
+                        updateLoadStatus("Get issues in sprint " + sprint.name);
+                        getJiraIssues(sprint.id);
+                    }
                 }
             })
             .fail(function() {
-                updateLoadStatus('Error calling JIRA greenhopper Api"', true);
+                updateLoadStatus('Error calling JIRA greenhopper Api', true);
             });
         }
     }

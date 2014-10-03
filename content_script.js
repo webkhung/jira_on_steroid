@@ -87,7 +87,7 @@ function updateJiraBoard() {
 
             $.get("https://jira.intuit.com/rest/greenhopper/1.0/xboard/work/allData/?rapidViewId=" + rapidViewID, function( data ) {
                 if (data.sprintsData.sprints.length > 3){
-                    updateLoadStatus('No active sprint.  Please select a sprint first.', true);
+                    updateLoadStatus('Too many sprints.  Please select a sprint first.', true);
                 }
                 else {
                     for(var i=0; i < data.sprintsData.sprints.length; i++){
@@ -134,13 +134,13 @@ function addPluginMenu(){
         "</div>" +
         "<div id='intu-help'>" +
             "<strong>Label</strong><br>" +
-            "Any JIRA labels that started with underscore “_” is displayed on the top right corner of the card. e.g. \"_InQA\", \"_FailedQA\"<br>" +
+            "Any JIRA labels that started with underscore “_” are displayed on the top right corner of the card. e.g. \"_InQA\", \"_FailedQA\"<br>" +
             "<strong>Sub tasks, blocking / blocked tasks</strong><br>" +
-            "Any sub tasks and blocking/blocked by tasks is displayed on the top left corner of the card.<br>" +
+            "Any sub tasks and blocking/blocked by tasks are displayed on the top left corner of the card.<br>" +
             "<strong>Hygiene</strong><br>" +
-            "If the hygiene checkbox is checked, a “Hygiene” label is displayed on the bottom left corner of the card.<br>" +
+            "If the hygiene checkbox is checked, a “Hygiene” label are displayed on the bottom left corner of the card.<br>" +
             "<strong>Github pull request</strong><br>" +
-            "If you use Github to track pull requests, enter the Github info in the option page, and put the Jira issue number to the pull request title.<br>The plugin would display the pull request label on the bottom right corner of the card.<br>" +
+            "If you use Github to track pull requests, enter the Github info on the option page, and put the Jira issue number to the pull request title.<br>The plugin would display the pull request label on the bottom right corner of the card.<br>" +
             "<strong>Sorting</strong><br>" +
             "This plugin supports sorted by users, story points, and labels.<br>" +
             "<strong>Keyboard Shortcut</strong><br>" +

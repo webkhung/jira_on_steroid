@@ -137,8 +137,10 @@ function addPluginMenu(){
             "<strong>Github pull request</strong><br>" +
             "If you use Github to track pull requests, enter the Github info in the option page, and put the Jira issue number to the pull request title.<br>The plugin would display the pull request label on the bottom right corner of the card.<br>" +
             "<strong>Sorting</strong><br>" +
-            "This plugin supports sorted by users, story points, and labels." +
-            "<br><div id='intu-contact-me'>Please submit bugs, feature requests, feedback to <u>kelvin_hung@intuit.com</u></div>" +
+            "This plugin supports sorted by users, story points, and labels.<br>" +
+            "<strong>Keyboard Shortcut</strong><br>" +
+            "Click on a JIRA card and press \"E\" to bring up the edit dialog.<br>" +
+            "<br><div id='intu-contact-me'>Please submit bugs, feature requests, feedback to <u>kelvin_hung@intuit.com</u>.<br>This is a private Chrome plugin, you can find the plugin <a href='https://chrome.google.com/webstore/detail/jira-on-steroid/allgccigpmbiidjamamjhhcpbclmdgln' target='_blank'>here</a></div>" +
         "</div>"
     );
 }
@@ -241,7 +243,7 @@ function addHovercardTo(elIssue, fields){
     elIssue.find('.ghx-issue-fields:first, .ghx-key').first().hovercard({
         detailsHTML:
             "<h3 style='float:left'>Status</h3>" +
-                "<div style='float:right'>Crt: " + toDate(fields.created) + " Upd: " + toDate(fields.updated) +
+                "<div style='float:right'>Created: " + toDate(fields.created) + " Updated: " + toDate(fields.updated) +
                 "</div><div style='clear:both'></div>" +
                 fields.status.name +
                 summaryHtml +
@@ -273,9 +275,11 @@ function setIssueAttributesTo(elIssue, fields, prLabel){
 
     var label = prLabel;
     labels = fields.labels.sort();
-    for(var j=0; j<labels.length && labels[j].indexOf('_') == 0; j++){
-        label = labels[j].substring(1).toLowerCase();
-        break;
+    for(var j=0; j<labels.length; j++){
+        if(labels[j].indexOf('_') == 0){
+            label = labels[j].substring(1).toLowerCase();
+            break;
+        }
     }
 
     elIssue.attr('_displayName', displayName);

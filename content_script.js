@@ -1,18 +1,17 @@
-chrome.runtime.sendMessage({method: "getLocalStorage", key: "settings"}, function(response) {
-    startPlugin(response.githubUsername, response.githubPassword, response.githubUser, response.githubRepo);
-});
-
 var githubIssues = [];
+var githubUsername, githubPassword, githubUser, githubRepo;
 var statusCounts = {New: 0, InProgress: 0, Blocked: 0, Verify: 0, Closed: 0, Deferred: 0};
 var statusStoryPoints = {New: 0, InProgress: 0, Blocked: 0, Verify: 0, Closed: 0, Deferred: 0};
-var lastUrl = window.location.href;
 
-function checkUrlChanged(){
-    if(window.location.href != lastUrl){
-        lastUrl = window.location.href;
-        setTimeout(function(){updateJiraBoard()}, 5000);
-    }
-}
+chrome.runtime.sendMessage({method: "getLocalStorage", key: "settings"}, function(response) {
+    githubUsername = response.githubUsername;
+    githubPassword = response.githubPassword;
+    githubUser = response.githubUser;
+    githubRepo = response.githubRepo;
+
+    setupDocument();
+    loadPlugin();
+});
 
 function getGithubIssues(githubUsername, githubPassword, githubUser, githubRepo) {
     var github = new window.Github({
@@ -100,10 +99,8 @@ function updateJiraBoard() {
     }
 }
 
-function startPlugin(githubUsername, githubPassword, githubUser, githubRepo){
-
-    setupDocument();
-
+function loadPlugin(){
+    console.log('loadPlugin');
     if (githubUsername.length > 0 && githubPassword.length > 0 && githubUser.length > 0 && githubRepo.length > 0) {
         getGithubIssues(githubUsername, githubPassword, githubUser, githubRepo);
     }
@@ -111,8 +108,6 @@ function startPlugin(githubUsername, githubPassword, githubUser, githubRepo){
     addPluginMenu();
 
     updateJiraBoard();
-
-    setInterval(function(){checkUrlChanged()}, 3000);
 }
 
 function addPluginMenu(){
@@ -127,22 +122,23 @@ function addPluginMenu(){
         "</span>" +
         "</span>" +
 //        "<a href='javascript:window.go();'>Click me</a>" +
-        "<a id='intu-menu-toggle' style='text-decoration: none' href='javascript:pluginClose();'>X</a>" +
+        "<a id='intu-menu-toggle' style='text-decoration: none !important' href='javascript:pluginClose();'>X</a>" +
         "<div id='intu-status'>" +
             "<div><strong>Number of Issues : </strong><span id='intu-status-issues'></span></div>" +
             "<div><strong>Number of Story Points : </strong><span id='intu-status-points'></span></div>" +
         "</div>" +
         "<div id='intu-help'>" +
-            "<br><strong>Label</strong><br>" +
-            "Any JIRA labels that started with underscore “_” is displayed on the top right corner of the issue. e.g. \"_InQA\", \"_FailedQA\"<br>" +
+            "<strong>Label</strong><br>" +
+            "Any JIRA labels that started with underscore “_” is displayed on the top right corner of the card. e.g. \"_InQA\", \"_FailedQA\"<br>" +
             "<strong>Sub tasks, blocking / blocked tasks</strong><br>" +
-            "Any sub tasks and blocking/blocked by tasks is displayed on the top left corner of the issue.<br>" +
+            "Any sub tasks and blocking/blocked by tasks is displayed on the top left corner of the card.<br>" +
             "<strong>Hygiene</strong><br>" +
-            "If the hygiene checkbox is checked, a “Hygiene” label is displayed on the bottom left corner of the issue.<br>" +
+            "If the hygiene checkbox is checked, a “Hygiene” label is displayed on the bottom left corner of the card.<br>" +
             "<strong>Github pull request</strong><br>" +
-            "If you use Github to track pull requests, enter the Github info in the option page, and put the Jira issue number to the pull request title.<br>The plugin would display the pull request label on the bottom right corner of the issue.<br>" +
-            "<br><strong>Sorting</strong><br>" +
+            "If you use Github to track pull requests, enter the Github info in the option page, and put the Jira issue number to the pull request title.<br>The plugin would display the pull request label on the bottom right corner of the card.<br>" +
+            "<strong>Sorting</strong><br>" +
             "This plugin supports sorted by users, story points, and labels." +
+            "<br><div id='intu-contact-me'>Please submit bugs, feature requests, feedback to <u>kelvin_hung@intuit.com</u></div>" +
         "</div>"
     );
 }
@@ -292,15 +288,15 @@ function issueLabel(labels, prLabel, elIssue){
     var displayLabel = '';
 
     labels = labels.sort();
-    var first = true;
 
-    for(var j=0; j<labels.length && labels[j].indexOf('_') == 0 && first; j++){
-        first = false;
-        label = labels[j].substring(1).toLowerCase();
-        displayLabel += (label + ' ');
+    for(var j=0; j<labels.length; j++){
+        if(labels[j].indexOf('_') == 0){
+            label = labels[j].substring(1);
+            displayLabel += (label + ' ');
 
-        var color = stringToColour(label);
-        elIssue.css('background-color', 'rgba('+ hexToRgb(color) + ',0.4)');
+            var color = stringToColour(label.toLowerCase());
+            elIssue.css('background-color', 'rgba('+ hexToRgb(color) + ',0.2)');
+        }
     }
 
     if(prLabel.length > 0){
@@ -314,7 +310,7 @@ function issueLabel(labels, prLabel, elIssue){
 }
 
 function addLabelTo(elIssue, label, position){
-    elIssue.find('div').remove('.intu-label, .intu-label-top-right, .intu-label-bottom-left, .intu-label-bottom-right, .intu-label-top-left');
+//    elIssue.find('div').remove('.intu-label, .intu-label-top-right, .intu-label-bottom-left, .intu-label-bottom-right, .intu-label-top-left');
 
     label = label.trim();
     if (label.length > 0) {
@@ -413,12 +409,28 @@ document.addEventListener("hello", function(data) {
     updateJiraBoard(); // chrome.runtime.sendMessage("test"); What does this do?
 });
 
+document.addEventListener("loadPlugin", function(data) {
+    loadPlugin();
+});
+
 function main() {
     // Allow document to call window.go()
     window.go = function() {
         var event = document.createEvent('Event');
         event.initEvent('hello');
         document.dispatchEvent(event);
+    }
+
+    // Detect Jira message
+    console.yo = console.log;
+    console.log = function(str){
+        if (str.indexOf('Finished callbacks for gh.work.pool.rendered') > 0 || str.indexOf('issueUpdated') > 0){
+            console.yo('Load Plugin');
+            var event = document.createEvent('Event');
+            event.initEvent('loadPlugin');
+            document.dispatchEvent(event);
+        }
+        console.yo(str);
     }
 }
 
@@ -429,7 +441,7 @@ function setupDocument(){
     (document.body || document.head || document.documentElement).appendChild(script);
 
     // Inject Css to document
-    var css = '.ghx-issue .ghx-end { box-shadow: none; background: transparent; bottom: 12px !important;}',
+    var css = '.ghx-issue .ghx-end { box-shadow: none !important; background: transparent !important; bottom: 12px !important;}',
         head = document.head || document.getElementsByTagName('head')[0],
         style = document.createElement('style');
 
@@ -450,15 +462,15 @@ function setupDocument(){
     };
 
     // Trigger updateJireBoard when the buttons / filters on the board are clicked.
-    // These don't work .js-quickfilter-button, .js-sprintfilter
-    $('#work-toggle').on('click', function(){
+    $('#work-toggle, #plan-toggle').on('click', function(){
         $('#intu-status-issues').html('');
         $('#intu-menu-load').show();
         $('#intu-menu-actions, #intu-status').hide();
 
         updateLoadStatus('Updating Board');
-        updateJiraBoard();
+        loadPlugin();
     });
+
 
     $('body').append("<div class='hovercard'></div>");
     $('body').append("<div id='intu-menu'></div>");

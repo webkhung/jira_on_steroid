@@ -52,7 +52,7 @@ function pluginMaxSpace(){
 
 function pluginClose(){
     if ($('#intu-menu-toggle').html() == 'X'){
-        $('#intu-menu-container').hide();
+        $('#intu-menu-container, #intu-status, #intu-help').hide();
         $('#intu-menu-toggle').html('>');
     }
     else { // '>'

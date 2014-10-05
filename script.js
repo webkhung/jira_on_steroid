@@ -31,23 +31,41 @@ function pluginToggleStatus(){
     $('#intu-status').toggle();
 }
 
-function pluginMaxSpace(){
-    var allHeight = $('#announcement-banner').height() + $('header').height() + $('#ghx-operations').height();
+var hidingHeight = 0;
 
-    $('#announcement-banner, #header, #ghx-operations').toggle();
-    GH.SwimlaneStalker.poolStalker();
+function pluginAdjustSpace(){
+    console.log('adj space');
 
-
-    var oldHeight = $('#ghx-work').css('height');
-    var iOldHeight = parseInt(oldHeight.substring(0, oldHeight.length - 2));
-
-    if ($('#announcement-banner').is(":visible")){
-        var allHeight = $('#announcement-banner').height() + $('header').height() + $('#ghx-operations').height();
-        $('#ghx-report, #ghx-work, #ghx-plan').css('height', iOldHeight - allHeight);
+    var mainHeight = 0;
+    if($('#ghx-plan-group').length == 0){
+        mainHeight = pluginToInt($('#ghx-work').css('height'));
     }
     else {
-        $('#ghx-report, #ghx-work, #ghx-plan').css('height', iOldHeight + allHeight);
+        mainHeight = pluginToInt($('#ghx-plan-group').css('height'));
     }
+
+    if ($('#announcement-banner').is(":visible")){
+        $('#ghx-report, #ghx-work, #ghx-plan, #ghx-plan-group').css('height', mainHeight - hidingHeight);
+        GH.WorkView.renderPoolAndDetailView();
+    }
+    else {
+        $('#ghx-report, #ghx-work, #ghx-plan, #ghx-plan-group').css('height', mainHeight + hidingHeight);
+    }
+
+    // Work View
+    if($('#ghx-plan-group').length == 0){
+        GH.SwimlaneStalker.poolStalker(); // Move the work view column header up
+    }
+}
+
+function pluginMaxSpace(){
+    if (hidingHeight == 0) {
+        hidingHeight = $('#announcement-banner').height() + $('header .aui-header').height() + $('#ghx-operations').height();
+    }
+
+    $('#announcement-banner, #header, #ghx-operations').toggle();
+
+    pluginAdjustSpace();
 }
 
 function pluginClose(){
@@ -62,7 +80,20 @@ function pluginClose(){
     }
 }
 
+function pluginToInt(str){
+    return parseInt(str.substring(0, str.length - 2));
+}
+
 function pluginHelp(){
     $('#intu-status').hide();
     $('#intu-help').toggle();
 }
+
+$('#work-toggle, #plan-toggle').on('click', function(){
+    hidingHeight = 0;
+    $('#announcement-banner, #header, #ghx-operations').show();
+});
+
+$(window).resize(function() {
+    setTimeout(function(){pluginAdjustSpace()}, 1000);
+});

@@ -40,11 +40,9 @@ function getJiraIssues(sprintID){
         data.issues.forEach(function(issue) {
             var elIssue = $("div[data-issue-key='" + issue.key + "'].ghx-issue, div[data-issue-key='" + issue.key + "'].ghx-issue-compact").first();
             if (elIssue.length == 0) return; // in case the card doesn't exist on the UI
-
-            resetIssue(elIssue);
-
             var fields = issue.fields;
 
+            resetIssue(elIssue);
             addHovercardTo(elIssue, fields);
 
             var prLabel = '';
@@ -54,16 +52,14 @@ function getJiraIssues(sprintID){
             }
 
             addLabelTo(elIssue, issueLabel(fields.labels, prLabel, elIssue), 'top-right');
-
             setIssueAttributesTo(elIssue, fields, prLabel);
         });
 
         setIssueStatus(statusCounts, statusStoryPoints);
-
         addSortToColumnHeader();
     }, "json")
     .fail(function() {
-        updateLoadStatus('Error calling JIRA search Api"', true);
+        updateLoadStatus('Error calling JIRA search api"', true);
     });
 
 }
@@ -117,37 +113,38 @@ function loadPlugin(){
 
 function addPluginMenu(){
     $('#intu-menu').html(
-        "<span id='intu-menu-container'>" +
-        "<span id='intu-menu-load'></span>" +
-        "<span id='intu-menu-error'></span>" +
-        "<span id='intu-menu-actions' style='display:none'>" +
-            "<a href='javascript:pluginToggleStatus();'>Issue Status</a>" +
-            "<a href='javascript:pluginMaxSpace();'>Maximize Space</a>" +
-            "<a href='javascript:pluginHelp();'>Help</a>" +
-        "</span>" +
-        "</span>" +
-//        "<a href='javascript:window.go();'>Click me</a>" +
-        "<a id='intu-menu-toggle' style='text-decoration: none !important' href='javascript:pluginClose();'>X</a>" +
-        "<div id='intu-status'>" +
-            "<div><strong>Number of Issues : </strong><span id='intu-status-issues'></span></div>" +
-            "<div><strong>Number of Story Points : </strong><span id='intu-status-points'></span></div>" +
-        "</div>" +
-        "<div id='intu-help'>" +
-            "<strong>Label</strong><br>" +
-            "Any JIRA labels that started with underscore “_” are displayed on the top right corner of the card. e.g. \"_InQA\", \"_FailedQA\"<br>" +
-            "<strong>Sub tasks, blocking / blocked tasks</strong><br>" +
-            "Any sub tasks and blocking/blocked by tasks are displayed on the top left corner of the card.<br>" +
-            "<strong>Hygiene</strong><br>" +
-            "If the hygiene checkbox is checked, a “Hygiene” label are displayed on the bottom left corner of the card.<br>" +
-            "<strong>Github pull request</strong><br>" +
-            "If you use Github to track pull requests, enter the Github info on the option page, and put the Jira issue number to the pull request title.<br>The plugin would display the pull request label on the bottom right corner of the card.<br>" +
-            "<strong>Sorting</strong><br>" +
-            "This plugin supports sorted by users, story points, and labels.<br>" +
-            "<strong>Keyboard Shortcut</strong><br>" +
-            "Click on a JIRA card and press \"E\" to bring up the edit dialog.<br>" +
-            "<br><div id='intu-contact-me'>Please submit bugs, feature requests, feedback to <u>kelvin_hung@intuit.com</u>.<br>This is a private Chrome plugin, you can find the plugin <a href='https://chrome.google.com/webstore/detail/jira-on-steroid/allgccigpmbiidjamamjhhcpbclmdgln' target='_blank'>here</a></div>" +
-        "</div>"
+        "<span id='intu-menu-container'>  \
+        <span id='intu-menu-load'></span>  \
+        <span id='intu-menu-error'></span>  \
+        <span id='intu-menu-actions' style='display:none'>  \
+            <a href='javascript:pluginToggleStatus();'>Issue Status</a>  \
+            <a href='javascript:pluginMaxSpace();'>Maximize Space</a>  \
+            <a href='javascript:pluginHelp();'>Help</a>  \
+        </span>  \
+        </span>  \
+        <a id='intu-menu-toggle' style='text-decoration: none !important' href='javascript:pluginClose();'>X</a>  \
+        <div id='intu-status'>  \
+            <div><strong>Number of Issues : </strong><span id='intu-status-issues'></span></div>  \
+            <div><strong>Number of Story Points : </strong><span id='intu-status-points'></span></div>  \
+            <div>(The above numbers are from 1 active sprint or the first 3 sprints if no active sprints.)</div> \
+        </div>  \
+        <div id='intu-help'>  \
+            <strong>Label</strong><br> \
+            Any JIRA labels that started with underscore \"_\" are displayed on the top right corner of the card. e.g. \"_InQA\", \"_FailedQA\"<br>  \
+            <strong>Sub tasks, blocking / blocked tasks</strong><br>  \
+            Any sub tasks and blocking/blocked by tasks are displayed on the top left corner of the card.<br>  \
+            <strong>Hygiene</strong><br>  \
+            If the hygiene checkbox is checked, a “Hygiene” label are displayed on the bottom left corner of the card.<br>  \
+            <strong>Github pull request</strong><br>  \
+            If you use Github to track pull requests, enter the Github info on the option page, and put the Jira issue number to the pull request title.<br>The plugin would display the pull request label on the bottom right corner of the card.<br>  \
+            <strong>Sorting</strong><br>  \
+            This plugin supports sorted by users, story points, and labels.<br>  \
+            <strong>Keyboard Shortcut</strong><br>  \
+            Click on a JIRA card and press \"E\" to bring up the edit dialog.<br>  \
+            <br><div id='intu-contact-me'>Please submit bugs, feature requests, feedback to <u>kelvin_hung@intuit.com</u>.<br>This is a private Chrome plugin, you can find the plugin <a href='https://chrome.google.com/webstore/detail/jira-on-steroid/allgccigpmbiidjamamjhhcpbclmdgln' target='_blank'>here</a></div>  \
+        </div>"
     );
+    // <a href='javascript:window.go();'>Click me</a>
 }
 
 function setIssueStatus(statusCounts, statusStoryPoints) {
@@ -440,7 +437,7 @@ function main() {
     // Detect Jira message
     console.yo = console.log;
     console.log = function(str){
-        if (str.indexOf('Finished callbacks for gh.work.pool.rendered') > 0 || str.indexOf('issueUpdated') > 0){
+        if (str.indexOf('Finished callbacks for gh.work.pool.rendered') > 0 || str.indexOf('issueUpdated') > 0 || str.indexOf(': GH.BacklogView.draw') > 0){
             console.yo('Load Plugin');
             var event = document.createEvent('Event');
             event.initEvent('loadPlugin');

@@ -34,8 +34,6 @@ function pluginToggleStatus(){
 var hidingHeight = 0;
 
 function pluginAdjustSpace(){
-    console.log('adj space');
-
     var mainHeight = 0;
     if($('#ghx-plan-group').length == 0){
         mainHeight = pluginToInt($('#ghx-work').css('height'));
@@ -46,7 +44,6 @@ function pluginAdjustSpace(){
 
     if ($('#announcement-banner').is(":visible")){
         $('#ghx-report, #ghx-work, #ghx-plan, #ghx-plan-group').css('height', mainHeight - hidingHeight);
-        GH.WorkView.renderPoolAndDetailView();
     }
     else {
         $('#ghx-report, #ghx-work, #ghx-plan, #ghx-plan-group').css('height', mainHeight + hidingHeight);
@@ -64,6 +61,9 @@ function pluginMaxSpace(){
     }
 
     $('#announcement-banner, #header, #ghx-operations').toggle();
+    if ($('#announcement-banner').is(":visible")){
+        hidingHeight = 0;
+    }
 
     pluginAdjustSpace();
 }

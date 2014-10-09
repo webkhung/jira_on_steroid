@@ -278,11 +278,14 @@ function setIssueAttributesTo(elIssue, fields, prLabel){
     if (fields.priority) fields.priority.id;
 
     var label = prLabel;
+
     labels = fields.labels.sort();
-    for(var j=0; j<labels.length; j++){
-        if(labels[j].indexOf('_') == 0){
-            label = labels[j].substring(1).toLowerCase();
-            break;
+    if (labels.length > 0){
+        label = '';
+        for(var j=0; j<labels.length; j++){
+            if(labels[j].indexOf('_') == 0){
+                label += labels[j].substring(1).toLowerCase();
+            }
         }
     }
 
@@ -301,10 +304,12 @@ function issueLabel(labels, prLabel, elIssue){
         if(labels[j].indexOf('_') == 0){
             label = labels[j].substring(1);
             displayLabel += (label + ' ');
-
-            var color = stringToColour(label.toLowerCase());
-            elIssue.css('background-color', 'rgba('+ hexToRgb(color) + ',0.2)');
         }
+    }
+
+    if (displayLabel.length > 0) {
+        var color = stringToColour(displayLabel);
+        elIssue.css('background-color', 'rgba('+ hexToRgb(color) + ',0.2)');
     }
 
     if(prLabel.length > 0){

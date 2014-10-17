@@ -1,5 +1,5 @@
 var githubIssues = [];
-var githubUsername, githubPassword, githubUser, githubRepo;
+var githubUsername, githubPassword, githubUser, githubRepo, hoverDescription, lastComment, relatedCards, fixVersion;
 var statusCounts = {New: 0, InProgress: 0, Blocked: 0, Verify: 0, Closed: 0, Deferred: 0};
 var statusStoryPoints = {New: 0, InProgress: 0, Blocked: 0, Verify: 0, Closed: 0, Deferred: 0};
 
@@ -8,9 +8,12 @@ chrome.runtime.sendMessage({method: "getLocalStorage", key: "settings"}, functio
     githubPassword = response.githubPassword;
     githubUser = response.githubUser;
     githubRepo = response.githubRepo;
+    hoverDescription = response.hoverDescription == 'true';
+    lastComment = response.lastComment == 'true';
+    relatedCards = response.relatedCards == 'true';
+    fixVersion = response.fixVersion == 'true';
 
     setupDocument();
-    loadPlugin();
 });
 
 function getGithubIssues(githubUsername, githubPassword, githubUser, githubRepo) {
@@ -30,7 +33,7 @@ function getJiraIssues(sprintID){
     updateLoadStatus('Calling JIRA API for issues details');
 
     $.get("https://jira.intuit.com/rest/api/latest/search?jql=sprint%3D"+sprintID+"&fields=" +
-        "key,created,updated,status,summary,description,parent,labels,customfield_11703,customfield_14107,priority,subtasks,assignee,issuelinks&maxResults=200", function( data ) {
+        "key,created,updated,status,summary,description,parent,labels,customfield_11703,customfield_14107,priority,subtasks,assignee,issuelinks,fixVersions,comment&maxResults=200", function( data ) {
 
         updateLoadStatus('Received ' + data.issues.length + ' issues details');
 
@@ -119,29 +122,33 @@ function addPluginMenu(){
         <span id='intu-menu-actions' style='display:none'>  \
             <a href='javascript:pluginToggleStatus();'>Issue Status</a>  \
             <a href='javascript:pluginMaxSpace();'>Maximize Space</a>  \
-            <a href='javascript:pluginHelp();'>Help</a>  \
+            <a href='javascript:pluginHelp();'>Tips</a>  \
         </span>  \
         </span>  \
-        <a id='intu-menu-toggle' style='text-decoration: none !important' href='javascript:pluginClose();'>X</a>  \
+        <a id='intu-menu-toggle' style='text-decoration: none !important' href='javascript:pluginClose();'>></a>  \
         <div id='intu-status'>  \
             <div><strong>Number of Issues : </strong><span id='intu-status-issues'></span></div>  \
             <div><strong>Number of Story Points : </strong><span id='intu-status-points'></span></div>  \
             <div>(The above numbers are from 1 active sprint or the first 3 sprints if no active sprints.)</div> \
         </div>  \
         <div id='intu-help'>  \
-            <strong>Label</strong><br> \
-            Any JIRA labels that started with underscore \"_\" are displayed on the top right corner of the card. e.g. \"_InQA\", \"_FailedQA\"<br>  \
+            <div id='intu-contact-me'> \
+            <strong>Pick what fields to show on hover</strong><br> \
+            Select what fields to show: Chrome -> Extensions -> Click on <u>Options</u> under this externsion<br> \
+            <strong>Labeling</strong><br> \
+            JIRA labels started with underscore \"_\" are displayed on the top right corner of the card. e.g. \"_InQA\", \"_FailedQA\"<br>  \
             <strong>Sub tasks, blocking / blocked tasks</strong><br>  \
             Any sub tasks and blocking/blocked by tasks are displayed on the top left corner of the card.<br>  \
             <strong>Hygiene</strong><br>  \
-            If the hygiene checkbox is checked, a “Hygiene” label are displayed on the bottom left corner of the card.<br>  \
-            <strong>Github pull request</strong><br>  \
-            If you use Github to track pull requests, enter the Github info on the option page, and put the Jira issue number to the pull request title.<br>The plugin would display the pull request label on the bottom right corner of the card.<br>  \
+            If the hygiene checkbox is checked, a “Hygiene” label is displayed on the bottom left corner of the card.<br>  \
             <strong>Sorting</strong><br>  \
             This plugin supports sorted by users, story points, and labels.<br>  \
             <strong>Keyboard Shortcut</strong><br>  \
             Click on a JIRA card and press \"E\" to bring up the edit dialog.<br>  \
+            <strong>Github pull request</strong><br>  \
+            If you use Github to track pull requests, enter the Github info on the option page, and put the JIRA issue number to the pull request title.<br>The plugin would display the pull request label on the bottom right corner of the card.<br>  \
             <br><div id='intu-contact-me'>Please submit bugs, feature requests, feedback to <u>kelvin_hung@intuit.com</u>.<br>This is a private Chrome plugin, you can find the plugin <a href='https://chrome.google.com/webstore/detail/jira-on-steroid/allgccigpmbiidjamamjhhcpbclmdgln' target='_blank'>here</a></div>  \
+            </div>\
         </div>"
     );
     // <a href='javascript:window.go();'>Click me</a>
@@ -151,18 +158,18 @@ function setIssueStatus(statusCounts, statusStoryPoints) {
     var strStatusCounts = '';
     Object.keys(statusCounts).forEach(function (key) {
         var value = statusCounts[key];
-        strStatusCounts += key + " : <strong>" + value + "</strong> ";
+        strStatusCounts += key + ": <strong>" + value + "</strong>&nbsp;&nbsp;&nbsp;";
     });
 
     var strStatusStoryPoints = '';
     Object.keys(statusStoryPoints).forEach(function (key) {
         var value = statusStoryPoints[key];
-        strStatusStoryPoints += key + " : <strong>" + value + "</strong> ";
+        strStatusStoryPoints += key + ": <strong>" + value + "</strong>&nbsp;&nbsp;&nbsp;";
     });
 
-    if($('#intu-status-issues').is(':empty')){
-        $('#intu-menu-actions').show();
-    }
+//    if($('#intu-status-issues').is(':empty')){
+//        $('#intu-menu-actions').show();
+//    }
 
     $('#intu-menu-load').hide();
     $('#intu-status-issues').html(strStatusCounts);
@@ -221,6 +228,23 @@ function addHovercardTo(elIssue, fields){
     if (blockedBy.length > 0) blockedBy = "Blocked By " + blockedBy;
     if(blockHtml.length > 0) blockHtml = '<h3>Block</h3>' + blockHtml;
 
+    // Comment
+    var commentHtml = "";
+    if(fields.comment && fields.comment.comments.length > 0) {
+        comment = fields.comment.comments[fields.comment.comments.length-1];
+        commentHtml += comment.body + " (" + comment.author.displayName + " on " + toDate(comment.updated) + ")<br>";
+    }
+    if(commentHtml.length > 0){
+        commentHtml = "<h3>Last Comment</h3><div class='hovercard-comment'>" + commentHtml + "</div>";
+    }
+
+    // fixVersion
+    var fixVersionHtml = "";
+    if(fields.fixVersions && fields.fixVersions.length > 0){
+        fixVersions = fields.fixVersions[0];
+        fixVersionHtml = "<h3>Fix Version</h3>" + fixVersions.name + " - " + fixVersions.description;
+    }
+
 
     addLabelTo(elIssue, blocking + blockedBy, 'top-left');
 
@@ -243,6 +267,10 @@ function addHovercardTo(elIssue, fields){
         summaryHtml = "<h3>Summary</h3>" + fields.summary;
     }
 
+    console.log(fixVersion);
+    console.log(typeof(fixVersion));
+    console.log(fixVersion ? fixVersionHtml : "");
+
     // Attach hovercard event to each jira issue element
     elIssue.find('.ghx-issue-fields:first, .ghx-key').first().hovercard({
         detailsHTML:
@@ -250,12 +278,14 @@ function addHovercardTo(elIssue, fields){
                 "<div style='float:right'>Created: " + toDate(fields.created) + " Updated: " + toDate(fields.updated) +
                 "</div><div style='clear:both'></div>" +
                 fields.status.name +
+                (fixVersion ? fixVersionHtml : "")+
                 summaryHtml +
-                "<h3>Description</h3><div class='hovercard-desc'>" + fields.description + "</div>" + // $(fields.description).text().substring(0, 400)
-                parentHtml +
-                subtaskHtml +
-                blockHtml,
-        width: 400,
+                (hoverDescription ? "<h3>Description</h3><div class='hovercard-desc'>" + fields.description + "</div>" : "")+
+                (lastComment ? parentHtml : "")+
+                (lastComment ? subtaskHtml : "")+
+                (lastComment ? blockHtml : "")+
+                (relatedCards? commentHtml : ""),
+        width: 450,
         relatedIssues: subtaskKeys.concat(parentKey),
         blocks: blocks
     });
@@ -281,7 +311,6 @@ function setIssueAttributesTo(elIssue, fields, prLabel){
 
     labels = fields.labels.sort();
     if (labels.length > 0){
-        label = '';
         for(var j=0; j<labels.length; j++){
             if(labels[j].indexOf('_') == 0){
                 label += labels[j].substring(1).toLowerCase();

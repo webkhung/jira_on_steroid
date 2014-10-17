@@ -4,7 +4,11 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
             githubUsername: (localStorage['githubUsername'] || ''),
             githubPassword: (localStorage['githubPassword'] || ''),
             githubUser: (localStorage['githubUser'] || ''),
-            githubRepo: (localStorage['githubRepo'] || '')
+            githubRepo: (localStorage['githubRepo'] || ''),
+            hoverDescription: (localStorage['hoverDescription'] || 'true'),
+            lastComment: (localStorage['lastComment'] || 'true'),
+            relatedCards: (localStorage['relatedCards'] || 'true'),
+            fixVersion: (localStorage['fixVersion'] || 'true')
         });
     }
     else

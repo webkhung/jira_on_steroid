@@ -74,7 +74,7 @@ function pluginClose(){
         $('#intu-menu-toggle').html('>');
     }
     else { // '>'
-        $('#intu-menu-container').show();
+        $('#intu-menu-container, #intu-menu-actions').show();
         $('#intu-status').hide();
         $('#intu-menu-toggle').html('X');
     }

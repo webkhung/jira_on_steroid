@@ -77,7 +77,7 @@
 
 /*http://time2hack.com/2013/03/jquery-tutorial-build-hovercards-for-your-website.html*/
 .hovercard {
-    font-size: 13px;
+    font-size: 12px;
     display: none;
     position: absolute;
     width:300px;
@@ -110,6 +110,11 @@
 }
 
 .hovercard-desc {
-    max-height: 400px;
+    max-height: 350px;
+    overflow: hidden;
+}
+
+.hovercard-comment {
+    max-height: 200px;
     overflow: hidden;
 }

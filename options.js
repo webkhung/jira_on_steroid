@@ -4,17 +4,22 @@ function loadOptions() {
     document.getElementById("githubUser").value = localStorage["githubUser"] || 'live-community';
     document.getElementById("githubRepo").value = localStorage["githubRepo"] || 'live_community';
 
+    document.getElementById("hoverDescription").checked = localStorage["hoverDescription"] || true;
+    document.getElementById("lastComment").checked = localStorage["lastComment"] || true;
+    document.getElementById("relatedCards").checked = localStorage["relatedCards"] || true;
+    document.getElementById("fixVersion").checked = localStorage["fixVersion"] || true;
 }
 
 function saveOptions() {
-    var githubUsername  = document.getElementById("githubUsername").value;
-    var githubPassword  = document.getElementById("githubPassword").value;
-    var githubUser      = document.getElementById("githubUser").value;
-    var githubRepo      = document.getElementById("githubRepo").value;
-    localStorage["githubUsername"] = githubUsername;
-    localStorage["githubPassword"] = githubPassword;
-    localStorage["githubUser"] = githubUser;
-    localStorage["githubRepo"] = githubRepo;
+    localStorage["githubUsername"] = document.getElementById("githubUsername").value;
+    localStorage["githubPassword"] = document.getElementById("githubPassword").value;
+    localStorage["githubUser"] = document.getElementById("githubUser").value;
+    localStorage["githubRepo"] = document.getElementById("githubRepo").value;
+
+    localStorage["hoverDescription"] = document.getElementById("hoverDescription").checked;
+    localStorage["lastComment"] = document.getElementById("lastComment").checked;
+    localStorage["relatedCards"] = document.getElementById("relatedCards").checked;
+    localStorage["fixVersion"] = document.getElementById("fixVersion").checked;
 }
 
 window.addEventListener("load", loadOptions);

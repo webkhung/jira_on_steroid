@@ -47,7 +47,7 @@
 #intu-menu a {
     color: #333;
     text-decoration: underline !important;
-    margin-right:10px;
+    margin-right: 3px;
 }
 
 #intu-menu div strong {
@@ -58,12 +58,18 @@
     color: red;
 }
 
-#intu-status, #intu-help {
+#intu-status, #intu-help, #intu-filter-users {
     display: none;
     padding-top: 10px;
 }
 
-#intu-contact-me {
+#intu-menu-toggle {
+    font-weight: bold;
+}
+
+.intu-filter-user { padding: 0 5px; }
+
+.intu-container {
     background-color: #fff;
     padding: 5px;
     color: #333;

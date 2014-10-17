@@ -70,11 +70,11 @@ function pluginMaxSpace(){
 
 function pluginClose(){
     if ($('#intu-menu-toggle').html() == 'X'){
-        $('#intu-menu-container, #intu-status, #intu-help').hide();
+        $('#intu-menu-container, #intu-status, #intu-help, #intu-filter-users').hide();
         $('#intu-menu-toggle').html('>');
     }
     else { // '>'
-        $('#intu-menu-container, #intu-menu-actions').show();
+        $('#intu-menu-container, #intu-menu-actions, #intu-filter-users').show();
         $('#intu-status').hide();
         $('#intu-menu-toggle').html('X');
     }
@@ -87,6 +87,16 @@ function pluginToInt(str){
 function pluginHelp(){
     $('#intu-status').hide();
     $('#intu-help').toggle();
+}
+
+function pluginFilterUser(name){
+    $('.ghx-issue, .ghx-issue-compact').hide();
+    $(".ghx-issue[_displayName='" + name + "']").show();
+    $(".ghx-issue-compact[_displayName='" + name + "']").show();
+}
+
+function pluginClearUserFilter(){
+    $('.ghx-issue, .ghx-issue-compact').show();
 }
 
 $('#work-toggle, #plan-toggle').on('click', function(){

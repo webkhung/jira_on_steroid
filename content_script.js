@@ -126,28 +126,29 @@ function addPluginMenu(){
         </span>  \
         </span>  \
         <a id='intu-menu-toggle' style='text-decoration: none !important' href='javascript:pluginClose();'>></a>  \
+        <div id='intu-filter-users' class='intu-container'><strong>Filter By User:</strong> <a href='javascript:pluginClearUserFilter()'>All</a> </div> \
         <div id='intu-status'>  \
             <div><strong>Number of Issues : </strong><span id='intu-status-issues'></span></div>  \
             <div><strong>Number of Story Points : </strong><span id='intu-status-points'></span></div>  \
             <div>(The above numbers are from 1 active sprint or the first 3 sprints if no active sprints.)</div> \
         </div>  \
         <div id='intu-help'>  \
-            <div id='intu-contact-me'> \
-            <strong>Pick what fields to show on hover</strong><br> \
-            Select what fields to show: Chrome -> Extensions -> Click on <u>Options</u> under this externsion<br> \
-            <strong>Labeling</strong><br> \
-            JIRA labels started with underscore \"_\" are displayed on the top right corner of the card. e.g. \"_InQA\", \"_FailedQA\"<br>  \
-            <strong>Sub tasks, blocking / blocked tasks</strong><br>  \
-            Any sub tasks and blocking/blocked by tasks are displayed on the top left corner of the card.<br>  \
-            <strong>Hygiene</strong><br>  \
-            If the hygiene checkbox is checked, a “Hygiene” label is displayed on the bottom left corner of the card.<br>  \
-            <strong>Sorting</strong><br>  \
-            This plugin supports sorted by users, story points, and labels.<br>  \
-            <strong>Keyboard Shortcut</strong><br>  \
-            Click on a JIRA card and press \"E\" to bring up the edit dialog.<br>  \
-            <strong>Github pull request</strong><br>  \
-            If you use Github to track pull requests, enter the Github info on the option page, and put the JIRA issue number to the pull request title.<br>The plugin would display the pull request label on the bottom right corner of the card.<br>  \
-            <br><div id='intu-contact-me'>Please submit bugs, feature requests, feedback to <u>kelvin_hung@intuit.com</u>.<br>This is a private Chrome plugin, you can find the plugin <a href='https://chrome.google.com/webstore/detail/jira-on-steroid/allgccigpmbiidjamamjhhcpbclmdgln' target='_blank'>here</a></div>  \
+            <div class='intu-container'> \
+                <strong>Pick what fields to show on hover</strong><br> \
+                Select what fields to show: Chrome -> Extensions -> Click on <u>Options</u> under this externsion<br> \
+                <strong>Labeling</strong><br> \
+                JIRA labels started with underscore \"_\" are displayed on the top right corner of the card. e.g. \"_InQA\", \"_FailedQA\"<br>  \
+                <strong>Sub tasks, blocking / blocked tasks</strong><br>  \
+                Any sub tasks and blocking/blocked by tasks are displayed on the top left corner of the card.<br>  \
+                <strong>Hygiene</strong><br>  \
+                If the hygiene checkbox is checked, a “Hygiene” label is displayed on the bottom left corner of the card.<br>  \
+                <strong>Sorting</strong><br>  \
+                This plugin supports sorted by users, story points, and labels.<br>  \
+                <strong>Keyboard Shortcut</strong><br>  \
+                Click on a JIRA card and press \"E\" to bring up the edit dialog.<br>  \
+                <strong>Github pull request</strong><br>  \
+                If you use Github to track pull requests, enter the Github info on the option page, and put the JIRA issue number to the pull request title.<br>The plugin would display the pull request label on the bottom right corner of the card.<br>  \
+                <br><div class='intu-container'>Please submit bugs, feature requests, feedback to <u>kelvin_hung@intuit.com</u>.<br>This is a private Chrome plugin, you can find the plugin <a href='https://chrome.google.com/webstore/detail/jira-on-steroid/allgccigpmbiidjamamjhhcpbclmdgln' target='_blank'>here</a></div>  \
             </div>\
         </div>"
     );
@@ -322,6 +323,16 @@ function setIssueAttributesTo(elIssue, fields, prLabel){
     elIssue.attr('_storyPoint', storyPoint);
     elIssue.attr('_priority', priority);
     elIssue.attr('_label', label);
+
+    // Add name filter
+    if(displayName.length > 0 && $(".intu-filter-user[_displayName='" + displayName + "']").length == 0){
+        var linkUser = $('<a />').attr({
+            class: 'intu-filter-user',
+            href: "javascript:pluginFilterUser('" + displayName + "')",
+            _displayName: displayName
+        }).text(displayName);
+        $('#intu-filter-users').append(linkUser);
+    }
 }
 
 function issueLabel(labels, prLabel, elIssue){

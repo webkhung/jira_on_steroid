@@ -270,7 +270,7 @@ function addHovercardTo(elIssue, fields){
     var commentHtml = "";
     if(fields.comment && fields.comment.comments.length > 0) {
         comment = fields.comment.comments[fields.comment.comments.length-1];
-        commentHtml += comment.body + " (" + comment.author.displayName + " on " + toDate(comment.updated) + ")<br>";
+        commentHtml += comment.body + " (" + comment.author.displayName + " on " + (new Date(comment.updated)).toLocaleString() + ")<br>";
     }
     if(commentHtml.length > 0){
         commentHtml = "<h3>Last Comment</h3><div class='hovercard-comment'>" + commentHtml + "</div>";
@@ -309,7 +309,7 @@ function addHovercardTo(elIssue, fields){
     elIssue.find('.ghx-issue-fields:first, .ghx-key').first().hovercard({
         detailsHTML:
             "<h3 style='float:left'>Status</h3>" +
-                "<div style='float:right'>Created: " + toDate(fields.created) + " Updated: " + toDate(fields.updated) +
+                "<div style='float:right'>Created: " + (new Date(fields.created)).toLocaleDateString() + " Updated: " + (new Date(fields.updated)).toLocaleDateString() +
                 "</div><div style='clear:both'></div>" +
                 fields.status.name +
                 (fixVersion ? fixVersionHtml : "")+

@@ -3,18 +3,55 @@ var githubUsername, githubPassword, githubUser, githubRepo, hoverDescription, la
 var statusCounts = {New: 0, InProgress: 0, Blocked: 0, Verify: 0, Closed: 0, Deferred: 0};
 var statusStoryPoints = {New: 0, InProgress: 0, Blocked: 0, Verify: 0, Closed: 0, Deferred: 0};
 
-chrome.runtime.sendMessage({method: "getLocalStorage", key: "settings"}, function(response) {
-    githubUsername = response.githubUsername;
-    githubPassword = response.githubPassword;
-    githubUser = response.githubUser;
-    githubRepo = response.githubRepo;
-    hoverDescription = response.hoverDescription == 'true';
-    lastComment = response.lastComment == 'true';
-    relatedCards = response.relatedCards == 'true';
-    fixVersion = response.fixVersion == 'true';
+//alert(window.location.href);
+if(window.location.href.indexOf('RapidBoard') > 0) {
+    chrome.runtime.sendMessage({method: "getLocalStorage", key: "settings"}, function(response) {
+        githubUsername = response.githubUsername;
+        githubPassword = response.githubPassword;
+        githubUser = response.githubUser;
+        githubRepo = response.githubRepo;
+        hoverDescription = response.hoverDescription == 'true';
+        lastComment = response.lastComment == 'true';
+        relatedCards = response.relatedCards == 'true';
+        fixVersion = response.fixVersion == 'true';
 
-    setupDocument();
-});
+        setupDocument();
+    });
+
+    // hello will be an event sent from the document when call window.go()
+    document.addEventListener("hello", function(data) {
+        alert('cs');
+        updateJiraBoard(); // chrome.runtime.sendMessage("test"); What does this do?
+    });
+
+    document.addEventListener("loadPlugin", function(data) {
+        loadPlugin();
+    });
+}
+else {
+    setInterval(function() {
+        if (window.location.href.indexOf('https://github.com/live-community/live_community/pull/') == 0){
+            console.log('modify');
+            changeGithubPage();
+        }
+    }, 3000);
+
+    changeGithubPage();
+}
+
+function changeGithubPage(){
+    if($('.js-issue-title').text().indexOf('LCP-') > 0) {
+        var issueTitle = $('.js-issue-title').text();
+        var issueTitleNoLcp = issueTitle.substring(0, issueTitle.indexOf('LCP-'));
+        var lcp = issueTitle.substring(issueTitle.indexOf('LCP-'));
+        $('.js-issue-title').text(issueTitleNoLcp);
+        var jiraLink = $('<a />').attr({
+            href: "https://jira.intuit.com/browse/" + lcp,
+            target: '_blank'
+        }).text(lcp);;
+        $('.js-issue-title').append(jiraLink);
+    }
+}
 
 function getGithubIssues(githubUsername, githubPassword, githubUser, githubRepo) {
     var github = new window.Github({
@@ -268,10 +305,6 @@ function addHovercardTo(elIssue, fields){
         summaryHtml = "<h3>Summary</h3>" + fields.summary;
     }
 
-    console.log(fixVersion);
-    console.log(typeof(fixVersion));
-    console.log(fixVersion ? fixVersionHtml : "");
-
     // Attach hovercard event to each jira issue element
     elIssue.find('.ghx-issue-fields:first, .ghx-key').first().hovercard({
         detailsHTML:
@@ -460,16 +493,6 @@ function updateLoadStatus(status, error){
         }
     }
 }
-
-// hello will be an event sent from the document when call window.go()
-document.addEventListener("hello", function(data) {
-    alert('cs');
-    updateJiraBoard(); // chrome.runtime.sendMessage("test"); What does this do?
-});
-
-document.addEventListener("loadPlugin", function(data) {
-    loadPlugin();
-});
 
 function main() {
     // Allow document to call window.go()

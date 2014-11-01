@@ -205,10 +205,6 @@ function setIssueStatus(statusCounts, statusStoryPoints) {
         strStatusStoryPoints += key + ": <strong>" + value + "</strong>&nbsp;&nbsp;&nbsp;";
     });
 
-//    if($('#intu-status-issues').is(':empty')){
-//        $('#intu-menu-actions').show();
-//    }
-
     $('#intu-menu-load').hide();
     $('#intu-status-issues').html(strStatusCounts);
     $('#intu-status-points').html(strStatusStoryPoints);
@@ -253,7 +249,7 @@ function addHovercardTo(elIssue, fields){
                     blocks.push(issuelink.outwardIssue.key);
                     blockHtml += "<p>Blocking: " + issuelink.outwardIssue.key + ' ' + issuelink.outwardIssue.fields.summary + " (" + issuelink.outwardIssue.fields.status.name + ")</p>";
                 }
-                else if(issuelink.inwardIssue) { // means this issue is blocked by this key
+                else if(issuelink.inwardIssue && issuelink.inwardIssue.fields.status.name != 'Closed') { // means this issue is blocked by this key
                     blockedBy += (issuelink.inwardIssue.key) + ' ';
                     blocks.push(issuelink.inwardIssue.key);
                     blockHtml += "<p>Blocked By: " + issuelink.inwardIssue.key + ' ' + issuelink.inwardIssue.fields.summary + " (" + issuelink.inwardIssue.fields.status.name + ")</p>";
@@ -283,7 +279,6 @@ function addHovercardTo(elIssue, fields){
         fixVersionHtml = "<h3>Fix Version</h3>" + fixVersions.name + " - " + fixVersions.description;
     }
 
-
     addLabelTo(elIssue, blocking + blockedBy, 'top-left');
 
     // Hygenie
@@ -308,7 +303,7 @@ function addHovercardTo(elIssue, fields){
     // Attach hovercard event to each jira issue element
     elIssue.find('.ghx-issue-fields:first, .ghx-key').first().hovercard({
         detailsHTML:
-            "<h3 style='float:left'>Status</h3>" +
+            "<h3 style='float:left;padding-top:0px;'>Status</h3>" +
                 "<div style='float:right'>Created: " + (new Date(fields.created)).toLocaleDateString() + " Updated: " + (new Date(fields.updated)).toLocaleDateString() +
                 "</div><div style='clear:both'></div>" +
                 fields.status.name +
@@ -329,6 +324,7 @@ function resetIssue(elIssue){
     elIssue.attr('lc-sort-order', 0);
     elIssue.css("background-color", "");
     elIssue.css('background-image', 'none');
+    elIssue.find('.github-icon').remove();
 }
 
 function setIssueAttributesTo(elIssue, fields, prLabel){
@@ -396,8 +392,6 @@ function issueLabel(labels, prLabel, elIssue){
 }
 
 function addLabelTo(elIssue, label, position){
-//    elIssue.find('div').remove('.intu-label, .intu-label-top-right, .intu-label-bottom-left, .intu-label-bottom-right, .intu-label-top-left');
-
     label = label.trim();
     if (label.length > 0) {
         if (position == 'bottom-left')
@@ -422,8 +416,8 @@ function pullRequestLabel(issueKey, elIssue){
     var psDaysOld = Math.round(((new Date) - (new Date(pr['created_at']))) / (1000 * 60 * 60 * 24));
     var psLabel = '';
 
-    if(pr['labels'].length > 0){
-        psLabel = pr['labels'][0]['name'];
+    for(var i=0; i < pr['labels'].length; i++) {
+        psLabel += pr['labels'][i]['name'] + ' ';
     }
 
     var prInfo = psLabel + ' (PR: ' + psDaysOld + ' days)';
@@ -432,6 +426,19 @@ function pullRequestLabel(issueKey, elIssue){
         var imgURL = chrome.extension.getURL('images/web.png');
         elIssue.css('background-image', 'url("' + imgURL + '")');
     }
+
+    var img = $('<img />').attr({
+        src: chrome.extension.getURL("images/github.png"),
+        width:'16',
+        height:'15',
+        class: 'github-icon'
+    })
+    var anchor = $('<a />').attr({
+        href: pr['pull_request']['html_url'],
+        target: "_blank"
+    });
+
+    elIssue.find('.ghx-key').append(anchor.append(img));
 
     return prInfo;
 }
@@ -505,7 +512,7 @@ function main() {
     // Detect Jira message
     console.yo = console.log;
     console.log = function(str){
-        if (str.indexOf('Finished callbacks for gh.work.pool.rendered') > 0 || str.indexOf('issueUpdated') > 0 || str.indexOf(': GH.BacklogView.draw') > 0){
+        if (str.indexOf('Finished callbacks for gh.work.pool.rendered') > 0 || str.indexOf(': GH.BacklogView.draw') > 0 || str.indexOf('issueUpdated') > 0){
             console.yo('Load Plugin');
             var event = document.createEvent('Event');
             event.initEvent('loadPlugin');

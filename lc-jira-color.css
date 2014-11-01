@@ -1,7 +1,8 @@
 .intu-label {
     position: absolute;
     font-size:10px;
-    padding: 0 2px;
+    line-height: 11px;
+    padding: 0 0px;
     border: 1px soild #aaaaaa;
 }
 
@@ -26,7 +27,7 @@
 .intu-label-top-left {
     top:0px;
     left:5px;
-    background-color: #FFBEF4;
+    background-color: #ff65f0;
 }
 
 #intu-menu {
@@ -87,11 +88,11 @@
     display: none;
     position: absolute;
     width:300px;
-    padding:5px;
+    padding: 5px;
     /*height: 150px;*/
-    border:2px solid #0082c3;
+    border:2px solid #ed7d00;
     border-radius: 3px;
-    background-color: #fffeba;
+    background-color: #fffdd9;
     -webkit-box-shadow:  rgba(0, 0, 0, 0.4) 0px 3px 4px;
     -moz-box-shadow:  rgba(0, 0, 0, 0.4) 0px 3px 4px;
     box-shadow:  rgba(0, 0, 0, 0.4) 0px 3px 4px;
@@ -99,9 +100,10 @@
     z-index: 1000;
 }
 .hovercard h3{
-    padding: 2px 0px;
+    color: #ed7d00;
+    padding: 10px 0 5px 0;
     margin: 0 0 0 0;
-    font-size: 12px;
+    font-size: 13px;
     font-family: Verdana, Georgia;
     border-bottom: 1px dashed #ccc;
 }
@@ -116,7 +118,7 @@
 }
 
 .hovercard-desc {
-    max-height: 350px;
+    max-height: 200px;
     overflow: hidden;
 }
 

@@ -90,9 +90,10 @@ function getJiraIssues(sprintID){
                 prLabel = pullRequestLabel(issue.key, elIssue);
                 addLabelTo(elIssue, prLabel, 'bottom-right');
             }
+            var isPullRequest =  prLabel.length > 0;
 
-            addLabelTo(elIssue, issueLabel(fields.labels, prLabel, elIssue), 'top-right');
-            setIssueAttributesTo(elIssue, fields, prLabel);
+            addLabelTo(elIssue, issueLabel(fields.labels, isPullRequest, elIssue), 'top-right');
+            setIssueAttributesTo(elIssue, fields, isPullRequest);
         });
 
         setIssueStatus(statusCounts, statusStoryPoints);
@@ -141,7 +142,7 @@ function updateJiraBoard() {
 }
 
 function loadPlugin(){
-    console.log('loadPlugin');
+    console.log('>>> loadPlugin');
     if (githubUsername.length > 0 && githubPassword.length > 0 && githubUser.length > 0 && githubRepo.length > 0) {
         getGithubIssues(githubUsername, githubPassword, githubUser, githubRepo);
     }
@@ -327,7 +328,7 @@ function resetIssue(elIssue){
     elIssue.find('.github-icon').remove();
 }
 
-function setIssueAttributesTo(elIssue, fields, prLabel){
+function setIssueAttributesTo(elIssue, fields, isPullRequest){
     var storyPoint = 0;
     if (fields.customfield_11703) storyPoint = fields.customfield_11703;
 
@@ -337,7 +338,8 @@ function setIssueAttributesTo(elIssue, fields, prLabel){
     var priority = 5;
     if (fields.priority) fields.priority.id;
 
-    var label = prLabel;
+    var label = "";
+    if (isPullRequest) label = "Pull Request";
 
     labels = fields.labels.sort();
     if (labels.length > 0){
@@ -364,7 +366,7 @@ function setIssueAttributesTo(elIssue, fields, prLabel){
     }
 }
 
-function issueLabel(labels, prLabel, elIssue){
+function issueLabel(labels, isPullRequest, elIssue){
     var displayLabel = '';
 
     labels = labels.sort();
@@ -381,7 +383,7 @@ function issueLabel(labels, prLabel, elIssue){
         elIssue.css('background-color', 'rgba('+ hexToRgb(color) + ',0.2)');
     }
 
-    if(prLabel.length > 0){
+    if(isPullRequest){
         if (displayLabel.length == 0){
             elIssue.css('background-color', '#C9FEFE');
         }
@@ -510,10 +512,22 @@ function main() {
     }
 
     // Detect Jira message
+    GH.Logger.lo = GH.Logger.log;
+    GH.Logger.log=function(c,b){
+        if (c.indexOf('Finished callbacks for gh.work.pool.rendered') >= 0 || c.indexOf('GH.BacklogView.draw') >= 0){
+            var event = document.createEvent('Event');
+            event.initEvent('loadPlugin');
+            document.dispatchEvent(event);
+        }
+
+        // if (c != null) console.yo("1======" + c);
+        GH.Logger.lo(c,b);
+    };
+
     console.yo = console.log;
     console.log = function(str){
-        if (str.indexOf('Finished callbacks for gh.work.pool.rendered') > 0 || str.indexOf(': GH.BacklogView.draw') > 0 || str.indexOf('issueUpdated') > 0){
-            console.yo('Load Plugin');
+        // console.yo("======" + str);
+        if (str != null && str.indexOf('submit field: compare') >= 0){
             var event = document.createEvent('Event');
             event.initEvent('loadPlugin');
             document.dispatchEvent(event);

@@ -70,7 +70,7 @@ function getJiraIssues(sprintID){
     updateLoadStatus('Calling JIRA API for issues details');
 
     $.get("https://jira.intuit.com/rest/api/latest/search?jql=sprint%3D"+sprintID+"&fields=" +
-        "key,created,updated,status,summary,description,parent,labels,customfield_11703,customfield_14107,priority,subtasks,assignee,issuelinks,fixVersions,comment&maxResults=200", function( data ) {
+        "key,created,updated,status,summary,description,parent,labels,customfield_11703,customfield_14107,customfield_13624,priority,subtasks,assignee,issuelinks,fixVersions,comment&maxResults=200", function( data ) {
 
         updateLoadStatus('Received ' + data.issues.length + ' issues details');
 
@@ -84,6 +84,8 @@ function getJiraIssues(sprintID){
 
             resetIssue(elIssue);
             addHovercardTo(elIssue, fields);
+
+            addOpenLinkButton(issue.key, elIssue);
 
             var prLabel = '';
             if (githubIssues.length > 0){
@@ -287,6 +289,13 @@ function addHovercardTo(elIssue, fields){
         addLabelTo(elIssue, 'Hygiene', 'bottom-left');
     }
 
+    // Acceptance Criteria
+    if (fields.customfield_13624 && fields.customfield_13624.length > 0) {
+        var accpCount = $('<p>' + fields.customfield_13624 + '</p>').find('li').length;
+        if(accpCount == 0) accpCount = 1;
+        addLabelTo(elIssue, 'AC ' + accpCount, 'bottom-top-left');
+    }
+
     // Status count
     statusCounts[fields.status.name.replace(' ', '')] = statusCounts[fields.status.name.replace(' ', '')] + 1;
 
@@ -326,6 +335,7 @@ function resetIssue(elIssue){
     elIssue.css("background-color", "");
     elIssue.css('background-image', 'none');
     elIssue.find('.github-icon').remove();
+    elIssue.find('.open-icon').remove();
 }
 
 function setIssueAttributesTo(elIssue, fields, isPullRequest){
@@ -398,6 +408,8 @@ function addLabelTo(elIssue, label, position){
     if (label.length > 0) {
         if (position == 'bottom-left')
             cssClass = 'intu-label-bottom-left';
+        else if (position == 'bottom-top-left')
+            cssClass = 'intu-label-bottom-top-left';
         else if (position == 'bottom-right')
             cssClass = 'intu-label-bottom-right';
         else if (position == 'top-left')
@@ -406,6 +418,23 @@ function addLabelTo(elIssue, label, position){
             cssClass = "intu-label-top-right";
         elIssue.append("<div class='intu-label " + cssClass + "'>" + label + "</div>");
     }
+}
+
+function addOpenLinkButton(issueKey, elIssue){
+    if (elIssue.hasClass('ghx-issue-compact')) return
+
+    var img = $('<img />').attr({
+        src: chrome.extension.getURL("images/open.png"),
+        width:'16',
+        height:'15'
+    })
+    var anchor = $('<a />').attr({
+        href: "https://jira.intuit.com/browse/" + issueKey,
+        target: "_blank",
+        class: 'open-icon'
+    });
+
+    elIssue.find('.ghx-key').append(anchor.append(img));
 }
 
 function pullRequestLabel(issueKey, elIssue){
@@ -623,9 +652,12 @@ $.fn.hovercard = function(options) {
                 elIssue.find('.ghx-issue-fields:first').css('border','dotted 2px red');
             }
 
+            $(this).find('.open-icon').show();
+
             e.stopPropagation();
         },
         function(){
+            $(this).find('.open-icon').hide();
             $('.hovercard').hide();
             $('.hovercard').html('');
 

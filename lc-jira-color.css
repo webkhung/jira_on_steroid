@@ -18,6 +18,12 @@
     background-color: #59ff5b;
 }
 
+.intu-label-bottom-top-left {
+    bottom:10px;
+    left:5px;
+    background-color: #2ae6ff;
+}
+
 .intu-label-bottom-right {
     bottom:0px;
     right:0px;
@@ -80,6 +86,11 @@
 
 .custom-sort {
     padding-right:10px;
+}
+
+.open-icon {
+    margin-left: 5px;
+    display: none;
 }
 
 /*http://time2hack.com/2013/03/jquery-tutorial-build-hovercards-for-your-website.html*/

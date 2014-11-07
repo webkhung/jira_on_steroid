@@ -45,11 +45,7 @@ function changeGithubPage(){
         var issueTitleNoLcp = issueTitle.substring(0, issueTitle.indexOf('LCP-'));
         var lcp = issueTitle.substring(issueTitle.indexOf('LCP-'));
         $('.js-issue-title').text(issueTitleNoLcp);
-        var jiraLink = $('<a />').attr({
-            href: "https://jira.intuit.com/browse/" + lcp,
-            target: '_blank'
-        }).text(lcp);;
-        $('.js-issue-title').append(jiraLink);
+        $('.js-issue-title').append(issueLinkHtml(lcp, '').text(lcp));
     }
 }
 
@@ -83,9 +79,7 @@ function getJiraIssues(sprintID){
             var fields = issue.fields;
 
             resetIssue(elIssue);
-            addHovercardTo(elIssue, fields);
-
-            addOpenLinkButton(issue.key, elIssue);
+            addHovercardTo(elIssue, fields, issue.key);
 
             var prLabel = '';
             if (githubIssues.length > 0){
@@ -96,6 +90,8 @@ function getJiraIssues(sprintID){
 
             addLabelTo(elIssue, issueLabel(fields.labels, isPullRequest, elIssue), 'top-right');
             setIssueAttributesTo(elIssue, fields, isPullRequest);
+
+            addOpenLinkButton(issue.key, elIssue);
         });
 
         setIssueStatus(statusCounts, statusStoryPoints);
@@ -157,14 +153,15 @@ function loadPlugin(){
 function addPluginMenu(){
     $('#intu-menu').html(
         "<span id='intu-menu-container'>  \
-        <span id='intu-menu-load'></span>  \
-        <span id='intu-menu-error'></span>  \
-        <span id='intu-menu-actions' style='display:none'>  \
-            <a href='javascript:pluginToggleStatus();'>Issue Status</a>  \
-            <a href='javascript:pluginMaxSpace();'>Maximize Space</a>  \
-            <a href='javascript:pluginHelp();'>Tips</a>  \
+            <span id='intu-menu-load'></span>  \
+            <span id='intu-menu-error'></span>  \
+            <span id='intu-menu-actions' style='display:none'>  \
+                <a href='javascript:pluginToggleStatus();'>Issue Status</a>  \
+                <a href='javascript:pluginMaxSpace();'>Maximize Space</a>  \
+                <a href='javascript:pluginHelp();'>Tips</a>  \
+            </span>  \
         </span>  \
-        </span>  \
+        <a id='pluginMentionCount' href='javascript:pluginMention();'></a>  \
         <a id='intu-menu-toggle' style='text-decoration: none !important' href='javascript:pluginClose();'>></a>  \
         <div id='intu-filter-users' class='intu-container'><strong>Filter By User:</strong> <a href='javascript:pluginClearUserFilter()'>All</a> </div> \
         <div id='intu-status'>  \
@@ -190,7 +187,10 @@ function addPluginMenu(){
                 If you use Github to track pull requests, enter the Github info on the option page, and put the JIRA issue number to the pull request title.<br>The plugin would display the pull request label on the bottom right corner of the card.<br>  \
                 <br><div class='intu-container'>Please submit bugs, feature requests, feedback to <u>kelvin_hung@intuit.com</u>.<br>This is a private Chrome plugin, you can find the plugin <a href='https://chrome.google.com/webstore/detail/jira-on-steroid/allgccigpmbiidjamamjhhcpbclmdgln' target='_blank'>here</a></div>  \
             </div>\
-        </div>"
+        </div> \
+        <div id='intu-mention'>\
+        </div>\
+        "
     );
     // <a href='javascript:window.go();'>Click me</a>
 }
@@ -218,7 +218,7 @@ function resetIssueStatus(){
     statusStoryPoints = {New: 0, InProgress: 0, Blocked: 0, Verify: 0, Closed: 0, Deferred: 0};
 }
 
-function addHovercardTo(elIssue, fields){
+function addHovercardTo(elIssue, fields, issueKey){
     // Subtasks
     var subtaskHtml = '';
     var subtaskKeys = [];
@@ -265,15 +265,59 @@ function addHovercardTo(elIssue, fields){
     if (blockedBy.length > 0) blockedBy = "Blocked By " + blockedBy;
     if(blockHtml.length > 0) blockHtml = '<h3>Block</h3>' + blockHtml;
 
-    // Comment
+    // Comment & Mentioning
+    var myName = $('input[title=loggedInUser]').attr('value');
     var commentHtml = "";
     if(fields.comment && fields.comment.comments.length > 0) {
         comment = fields.comment.comments[fields.comment.comments.length-1];
-        commentHtml += comment.body + " (" + comment.author.displayName + " on " + (new Date(comment.updated)).toLocaleString() + ")<br>";
+        commentHtml += commentDisplay(comment);
+
+        var mentions = $('<p>' + comment.body + '</p>').find('a.user-hover');
+        for(var iMnt=0; iMnt < mentions.length; iMnt++){
+            if(myName == $(mentions[iMnt]).attr('rel')){
+                $('#intu-mention').append(issueLinkHtml(issueKey, 'mention').text(issueKey));
+                $('#intu-mention').append(fields.summary)
+                $('#intu-mention').append($(commentDisplay(comment)));
+                $('#intu-mention').append('<br>');
+
+                var strMention = ' Mention';
+                var mCount = $('#pluginMentionCount').text();
+                if(mCount == '') mCount = '0 Mentions';
+                var nextCount = parseInt( mCount.substring(0,mCount.indexOf(' '))) + 1;
+                if(nextCount > 1){
+                    strMention = ' Mentions';
+                }
+                $('#pluginMentionCount').text(nextCount + strMention)
+            }
+        }
     }
     if(commentHtml.length > 0){
         commentHtml = "<h3>Last Comment</h3><div class='hovercard-comment'>" + commentHtml + "</div>";
     }
+
+//    if(fields.comment && fields.comment.comments.length > 0) {
+//        for(var iCmt =0; iCmt < fields.comment.comments.length; iCmt++){
+//            var cmt = fields.comment.comments[iCmt]
+//            var mentions = $('<p>' + cmt.body + '</p>').find('a.user-hover');
+//            for(var iMnt=0; iMnt < mentions.length; iMnt++){
+//                if(myName == $(mentions[iMnt]).attr('rel')){
+//                    $('#intu-mention').append(issueLinkHtml(issueKey, 'mention').text(issueKey));
+//                    $('#intu-mention').append(fields.summary)
+//                    $('#intu-mention').append($(commentDisplay(cmt)));
+//                    $('#intu-mention').append('<br>');
+//
+//                    var strMention = ' Mention';
+//                    var mCount = $('#pluginMentionCount').text();
+//                    if(mCount == '') mCount = '0 Mentions';
+//                    var nextCount = parseInt( mCount.substring(0,mCount.indexOf(' '))) + 1;
+//                    if(nextCount > 1){
+//                        strMention = ' Mentions';
+//                    }
+//                    $('#pluginMentionCount').text(nextCount + strMention)
+//                }
+//            }
+//        }
+//    }
 
     // fixVersion
     var fixVersionHtml = "";
@@ -328,6 +372,10 @@ function addHovercardTo(elIssue, fields){
         relatedIssues: subtaskKeys.concat(parentKey),
         blocks: blocks
     });
+}
+
+function commentDisplay(comment){
+    return comment.body + " (" + comment.author.displayName + " on " + (new Date(comment.updated)).toLocaleString() + ")<br>";
 }
 
 function resetIssue(elIssue){
@@ -428,13 +476,16 @@ function addOpenLinkButton(issueKey, elIssue){
         width:'16',
         height:'15'
     })
+    elIssue.find('.ghx-key').append(issueLinkHtml(issueKey, 'open-icon').append(img));
+}
+
+function issueLinkHtml(issueKey, cssClass){
     var anchor = $('<a />').attr({
         href: "https://jira.intuit.com/browse/" + issueKey,
         target: "_blank",
-        class: 'open-icon'
+        class: cssClass
     });
-
-    elIssue.find('.ghx-key').append(anchor.append(img));
+    return anchor;
 }
 
 function pullRequestLabel(issueKey, elIssue){

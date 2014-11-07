@@ -84,9 +84,20 @@
     border: 1px solid #333
 }
 
-.custom-sort {
-    padding-right:10px;
+#intu-mention {
+    display: none;
 }
+
+
+#pluginMentionCount {
+    color: red !important;
+    font-weight: bold;
+    font-size: 14px;
+}
+
+#intu-mention p { margin-top: 0px; }
+
+.custom-sort { padding-right:10px; }
 
 .open-icon {
     margin-left: 5px;

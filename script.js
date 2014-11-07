@@ -89,6 +89,10 @@ function pluginHelp(){
     $('#intu-help').toggle();
 }
 
+function pluginMention(){
+    $('#intu-mention').toggle();
+}
+
 function pluginFilterUser(name){
     $('.ghx-issue, .ghx-issue-compact').hide();
     $(".ghx-issue[_displayName='" + name + "']").show();

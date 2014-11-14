@@ -738,7 +738,7 @@
     // ==========
 
     Github.Issue = function(options) {
-      var path = "/repos/" + options.user + "/" + options.repo + "/issues";
+      var path = "/repos/" + options.user + "/" + options.repo + "/issues?per_page=100";
 
       this.list = function(options, cb) {
         _request("GET", path, options, function(err, res) {

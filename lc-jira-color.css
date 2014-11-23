@@ -36,6 +36,17 @@
     background-color: #ff65f0;
 }
 
+#intu-side-menu {
+    padding: 5px;
+    border: 1px solid #333;
+    position: absolute;
+    top: 50px;
+    left: 0px;
+    background-color: #FFFE6A;
+    z-index: 1;
+    font-size: 13px;
+}
+
 #intu-menu {
     padding: 5px;
     border: 1px solid #333;
@@ -98,6 +109,8 @@
 #intu-mention p { margin-top: 0px; }
 
 .custom-sort { padding-right:10px; }
+
+.sort-icon { padding-right:10px; }
 
 .open-icon {
     margin-left: 5px;

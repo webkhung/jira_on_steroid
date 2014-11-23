@@ -2,8 +2,10 @@ var githubIssues = [];
 var githubUsername, githubPassword, githubUser, githubRepo, hoverDescription, lastComment, relatedCards, fixVersion;
 var statusCounts = {New: 0, InProgress: 0, Blocked: 0, Verify: 0, Closed: 0, Deferred: 0};
 var statusStoryPoints = {New: 0, InProgress: 0, Blocked: 0, Verify: 0, Closed: 0, Deferred: 0};
+var fields = "&fields=key,created,updated,status,summary,description,parent,labels,customfield_11703,customfield_14107,customfield_13624,priority,subtasks,assignee,issuelinks,fixVersions,comment&maxResults=200";
+var planIssueQuery = " and issuetype in standardIssueTypes() and ((sprint is empty and resolutiondate is empty) or sprint in openSprints() or sprint in futureSprints())"
+var workIssueQuery = " and (sprint in openSprints())";
 
-//alert(window.location.href);
 if(window.location.href.indexOf('RapidBoard') > 0) {
     chrome.runtime.sendMessage({method: "getLocalStorage", key: "settings"}, function(response) {
         githubUsername = response.githubUsername;
@@ -39,6 +41,88 @@ else {
     changeGithubPage();
 }
 
+function setupDocument(){
+    // Inject Js to document
+    var script = document.createElement('script');
+    script.appendChild(document.createTextNode('('+ main +')();'));
+    (document.body || document.head || document.documentElement).appendChild(script);
+
+    // Inject Css to document
+    var css = '.ghx-issue .ghx-end { box-shadow: none !important; background: transparent !important; bottom: 12px !important;}',
+        head = document.head || document.getElementsByTagName('head')[0],
+        style = document.createElement('style');
+
+    style.type = 'text/css';
+    if (style.styleSheet){
+        style.styleSheet.cssText = css;
+    } else {
+        style.appendChild(document.createTextNode(css));
+    }
+    head.appendChild(style);
+
+    // Inject script.js to the document
+    var s = document.createElement('script');
+    s.src = chrome.extension.getURL('script.js');
+    (document.head||document.documentElement).appendChild(s);
+    s.onload = function() {
+        s.parentNode.removeChild(s);
+    };
+
+    // Trigger updateJireBoard when the buttons / filters on the board are clicked.
+    $('#work-toggle, #plan-toggle').on('click', function(){
+        $('#intu-status-issues').html('');
+        $('#intu-menu-load').show();
+        $('#intu-menu-actions, #intu-status').hide();
+
+        updateLoadStatus('Updating Board');
+        loadPlugin();
+    });
+
+
+    $('body').append("<div class='hovercard'></div>");
+    $('body').append("<div id='intu-menu'></div>");
+    addSideMenu();
+}
+
+function loadPlugin(){
+    if (githubUsername.length > 0 && githubPassword.length > 0 && githubUser.length > 0 && githubRepo.length > 0) {
+        getGithubIssues(githubUsername, githubPassword, githubUser, githubRepo);
+    }
+    addPluginMenu();
+    updateJiraBoard();
+    console.log('>>> loadPlugin');
+}
+
+function main() {
+    // Allow document to call window.go()
+    window.go = function() {
+        var event = document.createEvent('Event');
+        event.initEvent('hello');
+        document.dispatchEvent(event);
+    }
+
+    // Detect Jira message
+    GH.Logger.lo = GH.Logger.log;
+    GH.Logger.log=function(c,b){
+        if (c.indexOf('Finished callbacks for gh.work.pool.rendered') >= 0 || c.indexOf('GH.BacklogView.draw') >= 0){
+            var event = document.createEvent('Event');
+            event.initEvent('loadPlugin');
+            document.dispatchEvent(event);
+        }
+        GH.Logger.lo(c,b);
+    };
+
+    console.yo = console.log;
+    console.log = function(str){
+        if (str != null && str.indexOf('submit field: compare') >= 0){
+            var event = document.createEvent('Event');
+            event.initEvent('loadPlugin');
+            document.dispatchEvent(event);
+        }
+        console.yo(str);
+    }
+}
+
 function changeGithubPage(){
     if($('.js-issue-title').text().indexOf('LCP-') > 0) {
         var issueTitle = $('.js-issue-title').text();
@@ -49,105 +133,80 @@ function changeGithubPage(){
     }
 }
 
-function getGithubIssues(githubUsername, githubPassword, githubUser, githubRepo) {
-    var github = new window.Github({
-        username: githubUsername,
-        password: githubPassword,
-        auth: "basic"
-    });
-    var issues = github.getIssues(githubUser, githubRepo); // 'live-community', 'live_community'
-    githubIssues = [];
-    issues.list('open', function(err, cbIssues) {
-        githubIssues = cbIssues;
-    });
-}
+function processIssues(data){
+    updateLoadStatus('Received ' + data.issues.length + ' issues details');
 
-function getJiraIssues(sprintID){
-    updateLoadStatus('Calling JIRA API for issues details');
+    $('.ghx-summary').removeAttr('title'); // Dont like their <a> title so remove it.
 
-    $.get("https://jira.intuit.com/rest/api/latest/search?jql=sprint%3D"+sprintID+"&fields=" +
-        "key,created,updated,status,summary,description,parent,labels,customfield_11703,customfield_14107,customfield_13624,priority,subtasks,assignee,issuelinks,fixVersions,comment&maxResults=200", function( data ) {
+    data.issues.forEach(function(issue) {
+        var elIssue = $("div[data-issue-key='" + issue.key + "'].ghx-issue, div[data-issue-key='" + issue.key + "'].ghx-issue-compact").first();
+        if (elIssue.length == 0) return; // in case the card doesn't exist on the UI
+        var fields = issue.fields;
+        resetIssue(elIssue);
+        addHovercardTo(elIssue, fields, issue.key);
 
-        updateLoadStatus('Received ' + data.issues.length + ' issues details');
-
-        $('.custom-sort').remove();
-        $('.ghx-summary').removeAttr('title'); // Dont like their <a> title so remove it.
-
-        data.issues.forEach(function(issue) {
-            var elIssue = $("div[data-issue-key='" + issue.key + "'].ghx-issue, div[data-issue-key='" + issue.key + "'].ghx-issue-compact").first();
-            if (elIssue.length == 0) return; // in case the card doesn't exist on the UI
-            var fields = issue.fields;
-
-            resetIssue(elIssue);
-            addHovercardTo(elIssue, fields, issue.key);
-
-            var prLabel = '';
-            if (githubIssues.length > 0){
-                prLabel = pullRequestLabel(issue.key, elIssue);
-                addLabelTo(elIssue, prLabel, 'bottom-right');
-            }
-            var isPullRequest =  prLabel.length > 0;
-
-            addLabelTo(elIssue, issueLabel(fields.labels, isPullRequest, elIssue), 'top-right');
-            setIssueAttributesTo(elIssue, fields, isPullRequest);
-
-            addOpenLinkButton(issue.key, elIssue);
-        });
-
-        setIssueStatus(statusCounts, statusStoryPoints);
-        addSortToColumnHeader();
-    }, "json")
-    .fail(function() {
-        updateLoadStatus('Error calling JIRA search api"', true);
+        var prLabel = '';
+        if (githubIssues.length > 0){
+            prLabel = pullRequestLabel(issue.key, elIssue);
+            addLabelTo(elIssue, prLabel, 'bottom-right');
+        }
+        var isPullRequest =  prLabel.length > 0;
+        addLabelTo(elIssue, issueLabel(fields.labels, isPullRequest, elIssue), 'top-right');
+        setIssueAttributesTo(elIssue, fields, isPullRequest);
+        addOpenLinkButton(issue.key, elIssue);
     });
 
+    setIssueStatus(statusCounts, statusStoryPoints);
 }
 
 function updateJiraBoard() {
     console.log('updateJiraBoard');
     resetIssueStatus();
 
-    var sprintID = getParameterByName('sprint');
-    var rapidViewID = getParameterByName('rapidView');
+    var sprintID = param('sprint');
+    var rapidViewID = param('rapidView');
+    var planView = param('view') == 'planning';
 
     if (sprintID.length == 0 && rapidViewID.length == 0) {
         updateLoadStatus('Not a RapidBoard Url');
     }
+    else if (sprintID !== undefined && sprintID != '') {
+        callJiraForIssues("https://jira.intuit.com/rest/api/latest/search?jql=sprint%3D" + sprintID + fields);
+    }
     else {
-        if (sprintID.length > 0) {
-            getJiraIssues(sprintID);
-        }
-        else {
-            updateLoadStatus('Not active sprint.  Calling JIRA API for the first sprint');
-
-            $.get("https://jira.intuit.com/rest/greenhopper/1.0/xboard/work/allData/?rapidViewId=" + rapidViewID, function( data ) {
-                if (data.sprintsData.sprints.length > 3){
-                    updateLoadStatus('Too many sprints.  Please select a sprint first.', true);
-                }
-                else {
-                    for(var i=0; i < data.sprintsData.sprints.length; i++){
-                        var sprint = data.sprintsData.sprints[i];
-                        updateLoadStatus("Get issues in sprint " + sprint.name);
-                        getJiraIssues(sprint.id);
-                    }
-                }
-            })
-            .fail(function() {
-                updateLoadStatus('Error calling JIRA greenhopper Api', true);
-            });
-        }
+        $('#intu-side-menu').toggle(!planView);
+        $.get("https://jira.intuit.com/rest/greenhopper/1.0/rapidviewconfig/editmodel.json?rapidViewId=" + rapidViewID, function( data ) {
+            var query = (planView? planIssueQuery : workIssueQuery);
+            callJiraForIssues("https://jira.intuit.com/rest/api/latest/search?jql=filter=" + data.filterConfig.id + query + fields);
+        });
     }
 }
 
-function loadPlugin(){
-    console.log('>>> loadPlugin');
-    if (githubUsername.length > 0 && githubPassword.length > 0 && githubUser.length > 0 && githubRepo.length > 0) {
-        getGithubIssues(githubUsername, githubPassword, githubUser, githubRepo);
+function addSideMenu(){
+    $('body').append("<div id='intu-side-menu'></div>");
+    
+    var sorts = {
+        assignee:     { image: "images/assignee.png", title: "Assignee", attr: "_displayName", order: "asc", valueType: "string" },
+        story_points: { image: "images/story_points.png", title: "Story Points", attr: "_storyPoint", order: "desc", valueType: "integer" },
+        label:        { image: "images/label.png", title: "Label", attr: "_label", order: "desc", valueType: "string" }
     }
 
-    addPluginMenu();
+    for(var sortKey in sorts) {
+        sort = sorts[sortKey];
 
-    updateJiraBoard();
+        var img = $('<img />').attr({
+            src: chrome.extension.getURL(sort['image']),
+            width:'16',
+            height:'16'
+        })
+        var anchor = $('<a />').attr({
+            title: sort['titles'],
+            class: 'sort-icon',
+            href: "javascript:window.sortAllJiraIssues('" + sort['attr'] + "', '" + sort['order'] + "', '" + sort['valueType'] + "')"
+        });
+
+        $('#intu-side-menu').append(anchor.append(img));
+    };
 }
 
 function addPluginMenu(){
@@ -211,179 +270,6 @@ function setIssueStatus(statusCounts, statusStoryPoints) {
     $('#intu-menu-load').hide();
     $('#intu-status-issues').html(strStatusCounts);
     $('#intu-status-points').html(strStatusStoryPoints);
-}
-
-function resetIssueStatus(){
-    statusCounts = {New: 0, InProgress: 0, Blocked: 0, Verify: 0, Closed: 0, Deferred: 0};
-    statusStoryPoints = {New: 0, InProgress: 0, Blocked: 0, Verify: 0, Closed: 0, Deferred: 0};
-}
-
-function addHovercardTo(elIssue, fields, issueKey){
-    // Subtasks
-    var subtaskHtml = '';
-    var subtaskKeys = [];
-
-    fields.subtasks.forEach(function(subtask) {
-        subtaskKeys.push(subtask.key);
-        subtaskHtml += "<p>" + subtask.key + ' ' + subtask.fields.summary + " (" + subtask.fields.status.name + ")</p>";
-    });
-    if(subtaskHtml.length > 0) subtaskHtml = '<h3>Sub tasks</h3>' + subtaskHtml;
-
-    // Parent
-    var parentHtml = '';
-    var parentKey = [];
-    if (fields.parent) {
-        parentKey.push(fields.parent.key);
-        parentHtml += "<p>" + fields.parent.key + ' ' + fields.parent.fields.summary + " (" + fields.parent.fields.status.name + ")</p>";
-    }
-    if(parentHtml.length > 0) parentHtml = '<h3>Parent</h3>' + parentHtml;
-
-    // Blocking and Blocked By
-    var blocking = "";
-    var blockedBy = "";
-    var blockHtml = "";
-    var blocks = [];
-
-    if(fields.issuelinks) {
-        fields.issuelinks.forEach(function(issuelink) {
-            if(issuelink.type.name == 'Blocks'){
-                if(issuelink.outwardIssue) { // means blocking this key
-                    blocking += (issuelink.outwardIssue.key + ' ');
-                    blocks.push(issuelink.outwardIssue.key);
-                    blockHtml += "<p>Blocking: " + issuelink.outwardIssue.key + ' ' + issuelink.outwardIssue.fields.summary + " (" + issuelink.outwardIssue.fields.status.name + ")</p>";
-                }
-                else if(issuelink.inwardIssue && issuelink.inwardIssue.fields.status.name != 'Closed') { // means this issue is blocked by this key
-                    blockedBy += (issuelink.inwardIssue.key) + ' ';
-                    blocks.push(issuelink.inwardIssue.key);
-                    blockHtml += "<p>Blocked By: " + issuelink.inwardIssue.key + ' ' + issuelink.inwardIssue.fields.summary + " (" + issuelink.inwardIssue.fields.status.name + ")</p>";
-                }
-            }
-        });
-    }
-
-    if (blocking.length > 0) blocking = "Blocking " + blocking;
-    if (blockedBy.length > 0) blockedBy = "Blocked By " + blockedBy;
-    if(blockHtml.length > 0) blockHtml = '<h3>Block</h3>' + blockHtml;
-
-    // Comment & Mentioning
-    var myName = $('input[title=loggedInUser]').attr('value');
-    var commentHtml = "";
-    if(fields.comment && fields.comment.comments.length > 0) {
-        comment = fields.comment.comments[fields.comment.comments.length-1];
-        commentHtml += commentDisplay(comment);
-
-        var mentions = $('<p>' + comment.body + '</p>').find('a.user-hover');
-        for(var iMnt=0; iMnt < mentions.length; iMnt++){
-            if(myName == $(mentions[iMnt]).attr('rel')){
-                $('#intu-mention').append(issueLinkHtml(issueKey, 'mention').text(issueKey));
-                $('#intu-mention').append(fields.summary)
-                $('#intu-mention').append($(commentDisplay(comment)));
-                $('#intu-mention').append('<br>');
-
-                var strMention = ' Mention';
-                var mCount = $('#pluginMentionCount').text();
-                if(mCount == '') mCount = '0 Mentions';
-                var nextCount = parseInt( mCount.substring(0,mCount.indexOf(' '))) + 1;
-                if(nextCount > 1){
-                    strMention = ' Mentions';
-                }
-                $('#pluginMentionCount').text(nextCount + strMention)
-            }
-        }
-    }
-    if(commentHtml.length > 0){
-        commentHtml = "<h3>Last Comment</h3><div class='hovercard-comment'>" + commentHtml + "</div>";
-    }
-
-//    if(fields.comment && fields.comment.comments.length > 0) {
-//        for(var iCmt =0; iCmt < fields.comment.comments.length; iCmt++){
-//            var cmt = fields.comment.comments[iCmt]
-//            var mentions = $('<p>' + cmt.body + '</p>').find('a.user-hover');
-//            for(var iMnt=0; iMnt < mentions.length; iMnt++){
-//                if(myName == $(mentions[iMnt]).attr('rel')){
-//                    $('#intu-mention').append(issueLinkHtml(issueKey, 'mention').text(issueKey));
-//                    $('#intu-mention').append(fields.summary)
-//                    $('#intu-mention').append($(commentDisplay(cmt)));
-//                    $('#intu-mention').append('<br>');
-//
-//                    var strMention = ' Mention';
-//                    var mCount = $('#pluginMentionCount').text();
-//                    if(mCount == '') mCount = '0 Mentions';
-//                    var nextCount = parseInt( mCount.substring(0,mCount.indexOf(' '))) + 1;
-//                    if(nextCount > 1){
-//                        strMention = ' Mentions';
-//                    }
-//                    $('#pluginMentionCount').text(nextCount + strMention)
-//                }
-//            }
-//        }
-//    }
-
-    // fixVersion
-    var fixVersionHtml = "";
-    if(fields.fixVersions && fields.fixVersions.length > 0){
-        fixVersions = fields.fixVersions[0];
-        fixVersionHtml = "<h3>Fix Version</h3>" + fixVersions.name + " - " + fixVersions.description;
-    }
-
-    addLabelTo(elIssue, blocking + blockedBy, 'top-left');
-
-    // Hygenie
-    if (fields.customfield_14107 && fields.customfield_14107[0].value == 'Yes') {
-        addLabelTo(elIssue, 'Hygiene', 'bottom-left');
-    }
-
-    // Acceptance Criteria
-    if (fields.customfield_13624 && fields.customfield_13624.length > 0) {
-        var accpCount = $('<p>' + fields.customfield_13624 + '</p>').find('li').length;
-        if(accpCount == 0) accpCount = 1;
-        addLabelTo(elIssue, 'AC ' + accpCount, 'bottom-top-left');
-    }
-
-    // Status count
-    statusCounts[fields.status.name.replace(' ', '')] = statusCounts[fields.status.name.replace(' ', '')] + 1;
-
-    var storyPoint = 0;
-    if (fields.customfield_11703) {
-        statusStoryPoints[fields.status.name.replace(' ', '')] = statusStoryPoints[fields.status.name.replace(' ', '')] + fields.customfield_11703;
-    }
-
-    // This is on Plan view. Add summary
-    var summaryHtml = '';
-    if (elIssue.hasClass('ghx-issue-compact')){
-        summaryHtml = "<h3>Summary</h3>" + fields.summary;
-    }
-
-    // Attach hovercard event to each jira issue element
-    elIssue.find('.ghx-issue-fields:first, .ghx-key').first().hovercard({
-        detailsHTML:
-            "<h3 style='float:left;padding-top:0px;'>Status</h3>" +
-                "<div style='float:right'>Created: " + (new Date(fields.created)).toLocaleDateString() + " Updated: " + (new Date(fields.updated)).toLocaleDateString() +
-                "</div><div style='clear:both'></div>" +
-                fields.status.name +
-                (fixVersion ? fixVersionHtml : "")+
-                summaryHtml +
-                (hoverDescription ? "<h3>Description</h3><div class='hovercard-desc'>" + fields.description + "</div>" : "")+
-                (lastComment ? parentHtml : "")+
-                (lastComment ? subtaskHtml : "")+
-                (lastComment ? blockHtml : "")+
-                (relatedCards? commentHtml : ""),
-        width: 450,
-        relatedIssues: subtaskKeys.concat(parentKey),
-        blocks: blocks
-    });
-}
-
-function commentDisplay(comment){
-    return comment.body + " (" + comment.author.displayName + " on " + (new Date(comment.updated)).toLocaleString() + ")<br>";
-}
-
-function resetIssue(elIssue){
-    elIssue.attr('lc-sort-order', 0);
-    elIssue.css("background-color", "");
-    elIssue.css('background-image', 'none');
-    elIssue.find('.github-icon').remove();
-    elIssue.find('.open-icon').remove();
 }
 
 function setIssueAttributesTo(elIssue, fields, isPullRequest){
@@ -468,26 +354,6 @@ function addLabelTo(elIssue, label, position){
     }
 }
 
-function addOpenLinkButton(issueKey, elIssue){
-    if (elIssue.hasClass('ghx-issue-compact')) return
-
-    var img = $('<img />').attr({
-        src: chrome.extension.getURL("images/open.png"),
-        width:'16',
-        height:'15'
-    })
-    elIssue.find('.ghx-key').append(issueLinkHtml(issueKey, 'open-icon').append(img));
-}
-
-function issueLinkHtml(issueKey, cssClass){
-    var anchor = $('<a />').attr({
-        href: "https://jira.intuit.com/browse/" + issueKey,
-        target: "_blank",
-        class: cssClass
-    });
-    return anchor;
-}
-
 function pullRequestLabel(issueKey, elIssue){
     var pr = pullRequest(issueKey);
     if (pr == null){
@@ -516,7 +382,8 @@ function pullRequestLabel(issueKey, elIssue){
         class: 'github-icon'
     })
     var anchor = $('<a />').attr({
-        href: pr['pull_request']['html_url'],
+        href: "javascript:void(0);",
+        onclick: "window.open('" + pr['pull_request']['html_url'] + "')",
         target: "_blank"
     });
 
@@ -525,137 +392,136 @@ function pullRequestLabel(issueKey, elIssue){
     return prInfo;
 }
 
-function pullRequest(issueKey){
-    if(githubIssues.length > 0){
-        for(var p=0; p < githubIssues.length; p++){
-            if(githubIssues[p]['title'].indexOf(issueKey) >= 0) {
-                return githubIssues[p];
+function addHovercardTo(elIssue, fields, issueKey){
+    // Subtasks
+    var subtaskHtml = '';
+    var subtaskKeys = [];
+
+    fields.subtasks.forEach(function(subtask) {
+        subtaskKeys.push(subtask.key);
+        subtaskHtml += "<p>" + subtask.key + ' ' + subtask.fields.summary + " (" + subtask.fields.status.name + ")</p>";
+    });
+    if(subtaskHtml.length > 0) subtaskHtml = '<h3>Sub tasks</h3>' + subtaskHtml;
+
+    // Parent
+    var parentHtml = '';
+    var parentKey = [];
+    if (fields.parent) {
+        parentKey.push(fields.parent.key);
+        parentHtml += "<p>" + fields.parent.key + ' ' + fields.parent.fields.summary + " (" + fields.parent.fields.status.name + ")</p>";
+    }
+    if(parentHtml.length > 0) parentHtml = '<h3>Parent</h3>' + parentHtml;
+
+    // Blocking and Blocked By
+    var blocking = "";
+    var blockedBy = "";
+    var blockHtml = "";
+    var blocks = [];
+
+    if(fields.issuelinks) {
+        fields.issuelinks.forEach(function(issuelink) {
+            if(issuelink.type.name == 'Blocks'){
+                if(issuelink.outwardIssue) { // means blocking this key
+                    blocking += (issuelink.outwardIssue.key + ' ');
+                    blocks.push(issuelink.outwardIssue.key);
+                    blockHtml += "<p>Blocking: " + issuelink.outwardIssue.key + ' ' + issuelink.outwardIssue.fields.summary + " (" + issuelink.outwardIssue.fields.status.name + ")</p>";
+                }
+                else if(issuelink.inwardIssue && issuelink.inwardIssue.fields.status.name != 'Closed') { // means this issue is blocked by this key
+                    blockedBy += (issuelink.inwardIssue.key) + ' ';
+                    blocks.push(issuelink.inwardIssue.key);
+                    blockHtml += "<p>Blocked By: " + issuelink.inwardIssue.key + ' ' + issuelink.inwardIssue.fields.summary + " (" + issuelink.inwardIssue.fields.status.name + ")</p>";
+                }
+            }
+        });
+    }
+
+    if (blocking.length > 0) blocking = "Blocking " + blocking;
+    if (blockedBy.length > 0) blockedBy = "Blocked By " + blockedBy;
+    if(blockHtml.length > 0) blockHtml = '<h3>Block</h3>' + blockHtml;
+
+    // Comment & Mentioning
+    var myName = $('input[title=loggedInUser]').attr('value');
+    var commentHtml = "";
+    if(fields.comment && fields.comment.comments.length > 0) {
+        comment = fields.comment.comments[fields.comment.comments.length-1];
+        commentHtml += commentDisplayHtml(comment);
+
+        var mentions = $('<p>' + comment.body + '</p>').find('a.user-hover');
+        for(var iMnt=0; iMnt < mentions.length; iMnt++){
+            if(myName == $(mentions[iMnt]).attr('rel')){
+                $('#intu-mention').append(issueLinkHtml(issueKey, 'mention').text(issueKey));
+                $('#intu-mention').append(fields.summary)
+                $('#intu-mention').append($(commentDisplayHtml(comment)));
+                $('#intu-mention').append('<br>');
+
+                var strMention = ' Mention';
+                var mCount = $('#pluginMentionCount').text();
+                if(mCount == '') mCount = '0 Mentions';
+                var nextCount = parseInt( mCount.substring(0,mCount.indexOf(' '))) + 1;
+                if(nextCount > 1){
+                    strMention = ' Mentions';
+                }
+                $('#pluginMentionCount').text(nextCount + strMention)
             }
         }
     }
-
-    return null;
-}
-
-function addSortToColumnHeader(){
-    if ($('.ghx-swimlane').length > 1) {
-        $('.custom-sort').remove();
-        return;
+    if(commentHtml.length > 0){
+        commentHtml = "<h3>Last Comment</h3><div class='hovercard-comment'>" + commentHtml + "</div>";
     }
 
-    $('#ghx-column-headers .ghx-column').each(function(){
-        var dataId = $(this).attr('data-id');
+    // fixVersion
+    var fixVersionHtml = "";
+    if(fields.fixVersions && fields.fixVersions.length > 0){
+        fixVersions = fields.fixVersions[0];
+        fixVersionHtml = "<h3>Fix Version</h3>" + fixVersions.name + " - " + fixVersions.description;
+    }
 
-        var sorts = {
-            assignee:       { image: "images/assignee.png", title: "Assignee", attr: "_displayName", order: "asc", valueType: "string" },
-            story_points:   { image: "images/story_points.png", title: "Story Points", attr: "_storyPoint", order: "desc", valueType: "integer" },
-            label:          { image: "images/label.png", title: "Label", attr: "_label", order: "desc", valueType: "string" }
-        }
+    addLabelTo(elIssue, blocking + blockedBy, 'top-left');
 
-        for(var sortKey in sorts) {
-            sort = sorts[sortKey];
+    // Hygenie
+    if (fields.customfield_14107 && fields.customfield_14107[0].value == 'Yes') {
+        addLabelTo(elIssue, 'Hygiene', 'bottom-left');
+    }
 
-            var img = $('<img />').attr({
-                src: chrome.extension.getURL(sort['image']),
-                width:'16',
-                height:'16'
-            })
-            var anchor = $('<a />').attr({
-                title: sort['titles'],
-                class: 'custom-sort',
-                href: "javascript:window.sortJiraIssues('" + dataId + "', '" + sort['attr'] + "', '" + sort['order'] + "', '" + sort['valueType'] + "')"
-            });
+    // Acceptance Criteria
+    if (fields.customfield_13624 && fields.customfield_13624.length > 0) {
+        var accpCount = $('<p>' + fields.customfield_13624 + '</p>').find('li').length;
+        if(accpCount == 0) accpCount = 1;
+        addLabelTo(elIssue, 'AC ' + accpCount, 'bottom-top-left');
+    }
 
-            $(this).append(anchor.append(img));
-        };
+    // Status count
+    statusCounts[fields.status.name.replace(' ', '')] = statusCounts[fields.status.name.replace(' ', '')] + 1;
+
+    var storyPoint = 0;
+    if (fields.customfield_11703) {
+        statusStoryPoints[fields.status.name.replace(' ', '')] = statusStoryPoints[fields.status.name.replace(' ', '')] + fields.customfield_11703;
+    }
+
+    // This is on Plan view. Add summary
+    var summaryHtml = '';
+    if (elIssue.hasClass('ghx-issue-compact')){
+        summaryHtml = "<h3>Summary</h3>" + fields.summary;
+    }
+
+    // Attach hovercard event to each jira issue element
+    elIssue.find('.ghx-issue-fields:first, .ghx-key').first().hovercard({
+        detailsHTML:
+            "<h3 style='float:left;padding-top:0px;'>Status</h3>" +
+                "<div style='float:right'>Created: " + (new Date(fields.created)).toLocaleDateString() + " Updated: " + (new Date(fields.updated)).toLocaleDateString() +
+                "</div><div style='clear:both'></div>" +
+                fields.status.name +
+                (fixVersion ? fixVersionHtml : "")+
+                summaryHtml +
+                (hoverDescription ? "<h3>Description</h3><div class='hovercard-desc'>" + fields.description + "</div>" : "")+
+                (lastComment ? parentHtml : "")+
+                (lastComment ? subtaskHtml : "")+
+                (lastComment ? blockHtml : "")+
+                (relatedCards? commentHtml : ""),
+        width: 450,
+        relatedIssues: subtaskKeys.concat(parentKey),
+        blocks: blocks
     });
-}
-
-function updateLoadStatus(status, error){
-    if (error){
-        $('#intu-menu-error').text(status);
-    }
-    else {
-        $('#intu-menu-error').text('');
-        if (!$('#intu-menu-actions').is(":visible")) {
-            $('#intu-menu-load').text(status + "...");
-        }
-    }
-}
-
-function main() {
-    // Allow document to call window.go()
-    window.go = function() {
-        var event = document.createEvent('Event');
-        event.initEvent('hello');
-        document.dispatchEvent(event);
-    }
-
-    // Detect Jira message
-    GH.Logger.lo = GH.Logger.log;
-    GH.Logger.log=function(c,b){
-        if (c.indexOf('Finished callbacks for gh.work.pool.rendered') >= 0 || c.indexOf('GH.BacklogView.draw') >= 0){
-            var event = document.createEvent('Event');
-            event.initEvent('loadPlugin');
-            document.dispatchEvent(event);
-        }
-
-        // if (c != null) console.yo("1======" + c);
-        GH.Logger.lo(c,b);
-    };
-
-    console.yo = console.log;
-    console.log = function(str){
-        // console.yo("======" + str);
-        if (str != null && str.indexOf('submit field: compare') >= 0){
-            var event = document.createEvent('Event');
-            event.initEvent('loadPlugin');
-            document.dispatchEvent(event);
-        }
-        console.yo(str);
-    }
-}
-
-function setupDocument(){
-    // Inject Js to document
-    var script = document.createElement('script');
-    script.appendChild(document.createTextNode('('+ main +')();'));
-    (document.body || document.head || document.documentElement).appendChild(script);
-
-    // Inject Css to document
-    var css = '.ghx-issue .ghx-end { box-shadow: none !important; background: transparent !important; bottom: 12px !important;}',
-        head = document.head || document.getElementsByTagName('head')[0],
-        style = document.createElement('style');
-
-    style.type = 'text/css';
-    if (style.styleSheet){
-        style.styleSheet.cssText = css;
-    } else {
-        style.appendChild(document.createTextNode(css));
-    }
-    head.appendChild(style);
-
-    // Inject script.js to the document
-    var s = document.createElement('script');
-    s.src = chrome.extension.getURL('script.js');
-    (document.head||document.documentElement).appendChild(s);
-    s.onload = function() {
-        s.parentNode.removeChild(s);
-    };
-
-    // Trigger updateJireBoard when the buttons / filters on the board are clicked.
-    $('#work-toggle, #plan-toggle').on('click', function(){
-        $('#intu-status-issues').html('');
-        $('#intu-menu-load').show();
-        $('#intu-menu-actions, #intu-status').hide();
-
-        updateLoadStatus('Updating Board');
-        loadPlugin();
-    });
-
-
-    $('body').append("<div class='hovercard'></div>");
-    $('body').append("<div id='intu-menu'></div>");
 }
 
 $.fn.hovercard = function(options) {

@@ -17,9 +17,93 @@ function toDate(string){
     return date.getMonth() + "/" + date.getDay() + "/" + date.getFullYear();
 }
 
-function getParameterByName(name) {
+function param(name) {
     name = name.replace(/[\[]/, "\\[").replace(/[\]]/, "\\]");
     var regex = new RegExp("[\\?&]" + name + "=([^&#]*)"),
         results = regex.exec(location.search);
     return results == null ? "" : decodeURIComponent(results[1].replace(/\+/g, " "));
+}
+
+function updateLoadStatus(status, error){
+    if (error){
+        $('#intu-menu-error').text(status);
+    }
+    else {
+        $('#intu-menu-error').text('');
+        if (!$('#intu-menu-actions').is(":visible")) {
+            $('#intu-menu-load').text(status + "...");
+        }
+    }
+}
+
+function pullRequest(issueKey){
+    if(githubIssues.length > 0){
+        for(var p=0; p < githubIssues.length; p++){
+            if(githubIssues[p]['title'].indexOf(issueKey) >= 0) {
+                return githubIssues[p];
+            }
+        }
+    }
+
+    return null;
+}
+
+// HTML stuffs
+function issueLinkHtml(issueKey, cssClass){
+    var anchor = $('<a />').attr({
+        href: "javascript:void(0);",
+        onclick: "window.open('https://jira.intuit.com/browse/" + issueKey + "')",
+        target: "_blank",
+        class: cssClass
+    });
+    return anchor;
+}
+
+function commentDisplayHtml(comment){
+    return comment.body + " (" + comment.author.displayName + " on " + (new Date(comment.updated)).toLocaleString() + ")<br>";
+}
+
+function resetIssueStatus(){
+    statusCounts = {New: 0, InProgress: 0, Blocked: 0, Verify: 0, Closed: 0, Deferred: 0};
+    statusStoryPoints = {New: 0, InProgress: 0, Blocked: 0, Verify: 0, Closed: 0, Deferred: 0};
+}
+
+function resetIssue(elIssue){
+    elIssue.attr('lc-sort-order', 0);
+    elIssue.css("background-color", "");
+    elIssue.css('background-image', 'none');
+    elIssue.find('.github-icon').remove();
+    elIssue.find('.open-icon').remove();
+}
+
+function addOpenLinkButton(issueKey, elIssue){
+    if (elIssue.hasClass('ghx-issue-compact')) return
+    var img = $('<img />').attr({
+        src: chrome.extension.getURL("images/open.png"),
+        width:'16',
+        height:'15'
+    })
+    elIssue.find('.ghx-key').append(issueLinkHtml(issueKey, 'open-icon').append(img));
+}
+
+// External API Calls
+function callJiraForIssues(url){
+    updateLoadStatus('Calling JIRA API for issues details');
+    $.get(url, processIssues, "json")
+        .fail(function() {
+            updateLoadStatus('Error calling JIRA search api"', true);
+        });
+}
+
+function getGithubIssues(githubUsername, githubPassword, githubUser, githubRepo) {
+    var github = new window.Github({
+        username: githubUsername,
+        password: githubPassword,
+        auth: "basic"
+    });
+    var issues = github.getIssues(githubUser, githubRepo); // 'live-community', 'live_community'
+    githubIssues = [];
+    issues.list('open', function(err, cbIssues) {
+        githubIssues = cbIssues;
+    });
 }

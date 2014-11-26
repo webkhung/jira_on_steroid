@@ -27,11 +27,6 @@ window.sortAllJiraIssues = function(attr, order, valueType) {
     });
 }
 
-function pluginToggleStatus(){
-    $('#intu-help').hide();
-    $('#intu-status').toggle();
-}
-
 var hidingHeight = 0;
 
 function pluginAdjustSpace(){
@@ -85,9 +80,27 @@ function pluginToInt(str){
     return parseInt(str.substring(0, str.length - 2));
 }
 
+function pluginCardsWatching(myName){
+    $("div.ghx-issue").not("div.ghx-issue[_watchers*='" + myName + "']").toggle();
+}
+
+function pluginToggleStatus(){
+    $('#intu-help, #intu-filter-users').hide();
+    $('#intu-status').toggle();
+}
+
 function pluginHelp(){
-    $('#intu-status').hide();
+    $('#intu-status, #intu-filter-users').hide();
     $('#intu-help').toggle();
+}
+
+function pluginShowUserFilter(){
+    $('#intu-status, #intu-help').hide();
+    $('#intu-filter-users').toggle();
+}
+
+function pluginCloseAll(){
+    $('#intu-status, #intu-help, #intu-filter-users').hide();
 }
 
 function pluginMention(){

@@ -3,7 +3,7 @@ function loadOptions() {
     document.getElementById("githubPassword").value = localStorage["githubPassword"] || '';
     document.getElementById("githubUser").value = localStorage["githubUser"] || 'live-community';
     document.getElementById("githubRepo").value = localStorage["githubRepo"] || 'live_community';
-
+    document.getElementById("watchersNames").value = localStorage["watchersNames"] || '';
     document.getElementById("hoverDescription").checked = localStorage["hoverDescription"] || true;
     document.getElementById("lastComment").checked = localStorage["lastComment"] || true;
     document.getElementById("relatedCards").checked = localStorage["relatedCards"] || true;
@@ -15,6 +15,7 @@ function saveOptions() {
     localStorage["githubPassword"] = document.getElementById("githubPassword").value;
     localStorage["githubUser"] = document.getElementById("githubUser").value;
     localStorage["githubRepo"] = document.getElementById("githubRepo").value;
+    localStorage["watchersNames"] = document.getElementById("watchersNames").value;
 
     localStorage["hoverDescription"] = document.getElementById("hoverDescription").checked;
     localStorage["lastComment"] = document.getElementById("lastComment").checked;

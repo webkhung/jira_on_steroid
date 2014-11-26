@@ -48,11 +48,25 @@ function pullRequest(issueKey){
     return null;
 }
 
+function myName(){
+    return 'wbartolome';
+//    return $('input[title=loggedInUser]').attr('value');
+}
+
 // HTML stuffs
-function issueLinkHtml(issueKey, cssClass){
+function issueLinkJsHtml(issueKey, cssClass){
     var anchor = $('<a />').attr({
         href: "javascript:void(0);",
-        onclick: "window.open('https://jira.intuit.com/browse/" + issueKey + "')",
+        onclick: "window.open('https://jira.intuit.com/browse/" + issueKey + "');return false",
+        target: "_blank",
+        class: cssClass
+    });
+    return anchor;
+}
+
+function issueLinkHtml(issueKey, cssClass){
+    var anchor = $('<a />').attr({
+        href: "https://jira.intuit.com/browse/" + issueKey,
         target: "_blank",
         class: cssClass
     });
@@ -72,18 +86,47 @@ function resetIssue(elIssue){
     elIssue.attr('lc-sort-order', 0);
     elIssue.css("background-color", "");
     elIssue.css('background-image', 'none');
-    elIssue.find('.github-icon').remove();
-    elIssue.find('.open-icon').remove();
+    elIssue.find('.github-icon, .intu-watchers, .open-icon').remove();
 }
 
-function addOpenLinkButton(issueKey, elIssue){
+function addOpenIssueLinkTo(elIssue, issueKey){
     if (elIssue.hasClass('ghx-issue-compact')) return
     var img = $('<img />').attr({
         src: chrome.extension.getURL("images/open.png"),
         width:'16',
         height:'15'
     })
-    elIssue.find('.ghx-key').append(issueLinkHtml(issueKey, 'open-icon').append(img));
+    elIssue.find('.ghx-key').append(issueLinkJsHtml(issueKey, 'open-icon').append(img));
+}
+
+
+function addWatchersTo(elIssue, assignee, watchersField, watchersNames){
+    var watchers = '';
+    if(watchersField) {
+        for(var i=0; i < watchersField.length; i++){
+            var shortName = shortenName(watchersField[i].displayName); //.name
+            if(watchersNames.indexOf(shortName.toLowerCase()) >= 0){
+                watchers += (shortName + ", ");
+            }
+        }
+    }
+
+    if(assignee && watchers.indexOf(shortenName(assignee.displayName)) < 0){
+        shortName = shortenName(assignee.displayName);
+        if(watchersNames.indexOf(shortName.toLowerCase()) >= 0){
+            watchers = (shortName + ', ');
+        }
+    }
+
+    watchers = watchers.substring(0, watchers.length - 2);
+
+    if(watchers.length > 0)
+        elIssue.find('.ghx-summary').append("<div class='intu-watchers'>" + watchers + "</div>");
+}
+
+function shortenName(name){
+    var parts = name.split(' ');
+    return parts[0] + ' ' + parts[parts.length-1].substring(0,1);
 }
 
 // External API Calls

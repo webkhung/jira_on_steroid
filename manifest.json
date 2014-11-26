@@ -20,6 +20,23 @@
       "js": ["lib/base64.js", "lib/underscore-min.js", "github.js", "jquery.js", "utils.js", "content_script.js"]
     }
   ],
-  "web_accessible_resources": ["images/web.png", "images/assignee.png", "images/story_points.png", "images/priority.png", "images/label.png", "images/ajax-loader.gif", "images/github.png", "images/open.png", "script.js"],
+  "web_accessible_resources": [
+      "images/web.png",
+      "images/assignee.png",
+      "images/story_points.png",
+      "images/priority.png",
+      "images/label.png",
+      "images/ajax-loader.gif",
+      "images/github.png",
+      "images/open.png",
+      "images/max.png",
+      "images/status.png",
+      "images/info.png",
+      "images/sort.png",
+      "images/filter.png",
+      "images/me.png",
+      "images/watching.png",
+      "script.js"
+  ],
   "manifest_version": 2
 }

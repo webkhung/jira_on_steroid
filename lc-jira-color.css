@@ -37,14 +37,15 @@
 }
 
 #intu-side-menu {
-    padding: 5px;
+    padding: 7px;
     border: 1px solid #333;
     position: absolute;
-    top: 50px;
-    left: 0px;
+    top: 220px;
+    right: 0px;
     background-color: #FFFE6A;
     z-index: 1;
     font-size: 13px;
+    border-radius:3px;
 }
 
 #intu-menu {
@@ -78,7 +79,14 @@
 
 #intu-status, #intu-help, #intu-filter-users {
     display: none;
-    padding-top: 10px;
+    position: absolute;
+    width: 500px;
+    top: 0px;
+    right: 33px;
+    padding: 10px;
+    border: 1px solid black;
+    background-color: #ffffff;
+    border-radius:3px;
 }
 
 #intu-menu-toggle {
@@ -95,6 +103,11 @@
     border: 1px solid #333
 }
 
+.intu-watchers {
+    font-size: 10px;
+    background-color: #fffca2;
+}
+
 #intu-mention {
     display: none;
 }
@@ -108,14 +121,22 @@
 
 #intu-mention p { margin-top: 0px; }
 
-.custom-sort { padding-right:10px; }
-
-.sort-icon { padding-right:10px; }
-
 .open-icon {
     margin-left: 5px;
     display: none;
 }
+
+.tooltip2 {
+    display:none;
+    position:absolute;
+    border:1px solid #333;
+    background-color:#161616;
+    border-radius:3px;
+    padding:10px;
+    color:#fff;
+    font-size:12px;
+    right: 33px;
+ }
 
 /*http://time2hack.com/2013/03/jquery-tutorial-build-hovercards-for-your-website.html*/
 .hovercard {
@@ -125,7 +146,7 @@
     width:300px;
     padding: 5px;
     /*height: 150px;*/
-    border:2px solid #ed7d00;
+    border:1px solid #ed7d00;
     border-radius: 3px;
     background-color: #fffdd9;
     -webkit-box-shadow:  rgba(0, 0, 0, 0.4) 0px 3px 4px;
@@ -133,6 +154,7 @@
     box-shadow:  rgba(0, 0, 0, 0.4) 0px 3px 4px;
     /*background-color:rgba(255, 255, 186, 0.7);*/
     z-index: 1000;
+    border-radius:3px;
 }
 .hovercard h3{
     color: #ed7d00;

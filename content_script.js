@@ -1,8 +1,8 @@
 var githubIssues = [];
-var githubUsername, githubPassword, githubUser, githubRepo, hoverDescription, lastComment, relatedCards, fixVersion;
+var githubUsername, githubPassword, githubUser, githubRepo, watchersNames, hoverDescription, lastComment, relatedCards, fixVersion;
 var statusCounts = {New: 0, InProgress: 0, Blocked: 0, Verify: 0, Closed: 0, Deferred: 0};
 var statusStoryPoints = {New: 0, InProgress: 0, Blocked: 0, Verify: 0, Closed: 0, Deferred: 0};
-var fields = "&fields=key,created,updated,status,summary,description,parent,labels,customfield_11703,customfield_14107,customfield_13624,priority,subtasks,assignee,issuelinks,fixVersions,comment&maxResults=200";
+var fields = "&fields=key,created,updated,status,summary,description,parent,labels,customfield_11703,customfield_14107,customfield_13624,customfield_11712,priority,subtasks,assignee,issuelinks,fixVersions,comment&maxResults=200";
 var planIssueQuery = " and issuetype in standardIssueTypes() and ((sprint is empty and resolutiondate is empty) or sprint in openSprints() or sprint in futureSprints())"
 var workIssueQuery = " and (sprint in openSprints())";
 
@@ -12,6 +12,7 @@ if(window.location.href.indexOf('RapidBoard') > 0) {
         githubPassword = response.githubPassword;
         githubUser = response.githubUser;
         githubRepo = response.githubRepo;
+        watchersNames = response.watchersNames;
         hoverDescription = response.hoverDescription == 'true';
         lastComment = response.lastComment == 'true';
         relatedCards = response.relatedCards == 'true';
@@ -44,7 +45,7 @@ else {
 function setupDocument(){
     // Inject Js to document
     var script = document.createElement('script');
-    script.appendChild(document.createTextNode('('+ main +')();'));
+    script.appendChild(document.createTextNode('('+ setupClientLoginPluginEvent +')();'));
     (document.body || document.head || document.documentElement).appendChild(script);
 
     // Inject Css to document
@@ -90,10 +91,10 @@ function loadPlugin(){
     }
     addPluginMenu();
     updateJiraBoard();
-    console.log('>>> loadPlugin');
+    console.log('-loadPlugin');
 }
 
-function main() {
+function setupClientLoginPluginEvent() {
     // Allow document to call window.go()
     window.go = function() {
         var event = document.createEvent('Event');
@@ -151,9 +152,11 @@ function processIssues(data){
             addLabelTo(elIssue, prLabel, 'bottom-right');
         }
         var isPullRequest =  prLabel.length > 0;
+
         addLabelTo(elIssue, issueLabel(fields.labels, isPullRequest, elIssue), 'top-right');
-        setIssueAttributesTo(elIssue, fields, isPullRequest);
-        addOpenLinkButton(issue.key, elIssue);
+        setAttributesTo(elIssue, fields, isPullRequest);
+        addOpenIssueLinkTo(elIssue, issue.key);
+        addWatchersTo(elIssue, fields.assignee, fields.customfield_11712, watchersNames);
     });
 
     setIssueStatus(statusCounts, statusStoryPoints);
@@ -184,7 +187,38 @@ function updateJiraBoard() {
 
 function addSideMenu(){
     $('body').append("<div id='intu-side-menu'></div>");
-    
+
+    $('#intu-side-menu').html("\
+        <a href='javascript:pluginToggleStatus();' title='Issue Status'><img width=16 height=16 src=" + chrome.extension.getURL('images/status.png') + "></a><br>  \
+        <a href='javascript:pluginMaxSpace();' title='Maximize Space'><img width=16 height=16 src=" + chrome.extension.getURL('images/max.png') + "></a><br>  \
+        <a href='javascript:pluginHelp();' title='Tips'><img width=16 height=16 src=" + chrome.extension.getURL('images/info.png') + "></a><br>  \
+        <a href='javascript:pluginShowUserFilter();' title='Filter'><img width=16 height=16 src=" + chrome.extension.getURL('images/info.png') + "></a><br>  \
+        <a id='pluginMentionCount' href='javascript:pluginMention();'></a><br>  \
+        <div id='intu-filter-users' class='intu-container'><strong>Filter By Assignee:</strong> <a href='javascript:pluginClearUserFilter()' style='color:red'>Clear Filter</a> </div> \
+        <div id='intu-status'>  \
+            <div><strong>Number of Issues : </strong><span id='intu-status-issues'></span></div>  \
+            <div><strong>Number of Story Points : </strong><span id='intu-status-points'></span></div>  \
+        </div>  \
+        <div id='intu-help'>  \
+            <strong>Pick what fields to show on hover</strong><br> \
+            Select what fields to show: Chrome -> Extensions -> Click on <u>Options</u> under this externsion<br> \
+            <strong>Labeling</strong><br> \
+            JIRA labels started with underscore \"_\" are displayed on the top right corner of the card. e.g. \"_InQA\", \"_FailedQA\"<br>  \
+            <strong>Sub tasks, blocking / blocked tasks</strong><br>  \
+            Any sub tasks and blocking/blocked by tasks are displayed on the top left corner of the card.<br>  \
+            <strong>Hygiene</strong><br>  \
+            If the hygiene checkbox is checked, a “Hygiene” label is displayed on the bottom left corner of the card.<br>  \
+            <strong>Sorting</strong><br>  \
+            This plugin supports sorted by users, story points, and labels.<br>  \
+            <strong>Keyboard Shortcut</strong><br>  \
+            Click on a JIRA card and press \"E\" to bring up the edit dialog.<br>  \
+            <strong>Github pull request</strong><br>  \
+            If you use Github to track pull requests, enter the Github info on the option page, and put the JIRA issue number to the pull request title.<br>The plugin would display the pull request label on the bottom right corner of the card.<br>  \
+            <br><div class='intu-container'>Please submit bugs, feature requests, feedback to <u>kelvin_hung@intuit.com</u>.<br>This is a private Chrome plugin, you can find the plugin <a href='https://chrome.google.com/webstore/detail/jira-on-steroid/allgccigpmbiidjamamjhhcpbclmdgln' target='_blank'>here</a></div>  \
+        </div> \
+        "
+    );
+
     var sorts = {
         assignee:     { image: "images/assignee.png", title: "Assignee", attr: "_displayName", order: "asc", valueType: "string" },
         story_points: { image: "images/story_points.png", title: "Story Points", attr: "_storyPoint", order: "desc", valueType: "integer" },
@@ -205,8 +239,25 @@ function addSideMenu(){
             href: "javascript:window.sortAllJiraIssues('" + sort['attr'] + "', '" + sort['order'] + "', '" + sort['valueType'] + "')"
         });
 
-        $('#intu-side-menu').append(anchor.append(img));
+        $('#intu-side-menu').append(anchor.append(img).append('<br>'));
     };
+
+//    $('#intu-side-menu').append("<img class='masterTooltip' title='Show cards assigned to me' width=16 height=16 src=" + chrome.extension.getURL('images/me.png') + "><br>");
+    $('#intu-side-menu').append("<a href='javascript:pluginCardsWatching(\"" + myName() + "\");' title='Show cards I am watching'><img class='masterTooltip' title='Show cards I am watching'  width=16 height=16 src=" + chrome.extension.getURL('images/watching.png') + "></a><br>");
+    $('#intu-side-menu').append("<div id='intu-mention'></div>")
+
+
+    $('.masterTooltip').hover(function(){
+        var title = $(this).attr('title');
+        $(this).data('tipText', title).removeAttr('title');
+        $('<p class="tooltip2"></p>').text(title).appendTo('body').fadeIn('fast');
+    }, function() {
+        $(this).attr('title', $(this).data('tipText'));
+        $('.tooltip2').remove();
+    }).mousemove(function(e) {
+        var mousey = e.pageY + 10; //Get Y coordinates
+        $('.tooltip2').css({ top: mousey })
+    });
 }
 
 function addPluginMenu(){
@@ -214,41 +265,7 @@ function addPluginMenu(){
         "<span id='intu-menu-container'>  \
             <span id='intu-menu-load'></span>  \
             <span id='intu-menu-error'></span>  \
-            <span id='intu-menu-actions' style='display:none'>  \
-                <a href='javascript:pluginToggleStatus();'>Issue Status</a>  \
-                <a href='javascript:pluginMaxSpace();'>Maximize Space</a>  \
-                <a href='javascript:pluginHelp();'>Tips</a>  \
-            </span>  \
         </span>  \
-        <a id='pluginMentionCount' href='javascript:pluginMention();'></a>  \
-        <a id='intu-menu-toggle' style='text-decoration: none !important' href='javascript:pluginClose();'>></a>  \
-        <div id='intu-filter-users' class='intu-container'><strong>Filter By User:</strong> <a href='javascript:pluginClearUserFilter()'>All</a> </div> \
-        <div id='intu-status'>  \
-            <div><strong>Number of Issues : </strong><span id='intu-status-issues'></span></div>  \
-            <div><strong>Number of Story Points : </strong><span id='intu-status-points'></span></div>  \
-            <div>(The above numbers are from 1 active sprint or the first 3 sprints if no active sprints.)</div> \
-        </div>  \
-        <div id='intu-help'>  \
-            <div class='intu-container'> \
-                <strong>Pick what fields to show on hover</strong><br> \
-                Select what fields to show: Chrome -> Extensions -> Click on <u>Options</u> under this externsion<br> \
-                <strong>Labeling</strong><br> \
-                JIRA labels started with underscore \"_\" are displayed on the top right corner of the card. e.g. \"_InQA\", \"_FailedQA\"<br>  \
-                <strong>Sub tasks, blocking / blocked tasks</strong><br>  \
-                Any sub tasks and blocking/blocked by tasks are displayed on the top left corner of the card.<br>  \
-                <strong>Hygiene</strong><br>  \
-                If the hygiene checkbox is checked, a “Hygiene” label is displayed on the bottom left corner of the card.<br>  \
-                <strong>Sorting</strong><br>  \
-                This plugin supports sorted by users, story points, and labels.<br>  \
-                <strong>Keyboard Shortcut</strong><br>  \
-                Click on a JIRA card and press \"E\" to bring up the edit dialog.<br>  \
-                <strong>Github pull request</strong><br>  \
-                If you use Github to track pull requests, enter the Github info on the option page, and put the JIRA issue number to the pull request title.<br>The plugin would display the pull request label on the bottom right corner of the card.<br>  \
-                <br><div class='intu-container'>Please submit bugs, feature requests, feedback to <u>kelvin_hung@intuit.com</u>.<br>This is a private Chrome plugin, you can find the plugin <a href='https://chrome.google.com/webstore/detail/jira-on-steroid/allgccigpmbiidjamamjhhcpbclmdgln' target='_blank'>here</a></div>  \
-            </div>\
-        </div> \
-        <div id='intu-mention'>\
-        </div>\
         "
     );
     // <a href='javascript:window.go();'>Click me</a>
@@ -272,7 +289,7 @@ function setIssueStatus(statusCounts, statusStoryPoints) {
     $('#intu-status-points').html(strStatusStoryPoints);
 }
 
-function setIssueAttributesTo(elIssue, fields, isPullRequest){
+function setAttributesTo(elIssue, fields, isPullRequest){
     var storyPoint = 0;
     if (fields.customfield_11703) storyPoint = fields.customfield_11703;
 
@@ -294,10 +311,21 @@ function setIssueAttributesTo(elIssue, fields, isPullRequest){
         }
     }
 
+    var watchers = '';
+    if(fields.assignee) watchers = fields.assignee.name + ',';
+    if(fields.customfield_11712) {
+        for(var i=0; i < fields.customfield_11712.length; i++){
+            var watcherName = fields.customfield_11712[i].name;
+            var watcherDisplayName = fields.customfield_11712[i].displayName;
+            watchers += (watcherName + ",");
+        }
+    }
+
     elIssue.attr('_displayName', displayName);
     elIssue.attr('_storyPoint', storyPoint);
     elIssue.attr('_priority', priority);
     elIssue.attr('_label', label);
+    elIssue.attr('_watchers', watchers);
 
     // Add name filter
     if(displayName.length > 0 && $(".intu-filter-user[_displayName='" + displayName + "']").length == 0){
@@ -440,7 +468,8 @@ function addHovercardTo(elIssue, fields, issueKey){
     if(blockHtml.length > 0) blockHtml = '<h3>Block</h3>' + blockHtml;
 
     // Comment & Mentioning
-    var myName = $('input[title=loggedInUser]').attr('value');
+//    var myName = $('input[title=loggedInUser]').attr('value');
+    var name = myName();
     var commentHtml = "";
     if(fields.comment && fields.comment.comments.length > 0) {
         comment = fields.comment.comments[fields.comment.comments.length-1];
@@ -448,8 +477,8 @@ function addHovercardTo(elIssue, fields, issueKey){
 
         var mentions = $('<p>' + comment.body + '</p>').find('a.user-hover');
         for(var iMnt=0; iMnt < mentions.length; iMnt++){
-            if(myName == $(mentions[iMnt]).attr('rel')){
-                $('#intu-mention').append(issueLinkHtml(issueKey, 'mention').text(issueKey));
+            if(name == $(mentions[iMnt]).attr('rel')){
+                $('#intu-mention').append(issueLinkJsHtml(issueKey, 'mention').text(issueKey));
                 $('#intu-mention').append(fields.summary)
                 $('#intu-mention').append($(commentDisplayHtml(comment)));
                 $('#intu-mention').append('<br>');

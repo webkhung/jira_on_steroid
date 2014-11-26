@@ -64,18 +64,6 @@ function pluginMaxSpace(){
     pluginAdjustSpace();
 }
 
-function pluginClose(){
-    if ($('#intu-menu-toggle').html() == 'X'){
-        $('#intu-menu-container, #intu-status, #intu-help, #intu-filter-users').hide();
-        $('#intu-menu-toggle').html('>');
-    }
-    else { // '>'
-        $('#intu-menu-container, #intu-menu-actions, #intu-filter-users').show();
-        $('#intu-status').hide();
-        $('#intu-menu-toggle').html('X');
-    }
-}
-
 function pluginToInt(str){
     return parseInt(str.substring(0, str.length - 2));
 }

@@ -30,9 +30,7 @@ function updateLoadStatus(status, error){
     }
     else {
         $('#intu-menu-error').text('');
-        if (!$('#intu-menu-actions').is(":visible")) {
-            $('#intu-menu-load').text(status + "...");
-        }
+        $('#intu-menu-load').text(status + "...");
     }
 }
 
@@ -49,17 +47,16 @@ function pullRequest(issueKey){
 }
 
 function myName(){
-    return 'wbartolome';
-//    return $('input[title=loggedInUser]').attr('value');
+//    return 'wbartolome';
+    return $('input[title=loggedInUser]').attr('value');
 }
 
 // HTML stuffs
 function issueLinkJsHtml(issueKey, cssClass){
     var anchor = $('<a />').attr({
         href: "javascript:void(0);",
-        onclick: "window.open('https://jira.intuit.com/browse/" + issueKey + "');return false",
         target: "_blank",
-        class: cssClass
+        class: cssClass + " issueLink"
     });
     return anchor;
 }

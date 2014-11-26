@@ -72,17 +72,15 @@ function setupDocument(){
     // Trigger updateJireBoard when the buttons / filters on the board are clicked.
     $('#work-toggle, #plan-toggle').on('click', function(){
         $('#intu-status-issues').html('');
+        $('#intu-status').hide();
         $('#intu-menu-load').show();
-        $('#intu-menu-actions, #intu-status').hide();
 
         updateLoadStatus('Updating Board');
         loadPlugin();
     });
 
-
     $('body').append("<div class='hovercard'></div>");
     $('body').append("<div id='intu-menu'></div>");
-    addSideMenu();
 }
 
 function loadPlugin(){
@@ -90,6 +88,7 @@ function loadPlugin(){
         getGithubIssues(githubUsername, githubPassword, githubUser, githubRepo);
     }
     addPluginMenu();
+    addSideMenu();
     updateJiraBoard();
     console.log('-loadPlugin');
 }
@@ -112,6 +111,14 @@ function setupClientLoginPluginEvent() {
         }
         GH.Logger.lo(c,b);
     };
+
+    setTimeout(function(){
+        $('#ghx-pool').on('click', '.issueLink', function(e){
+            var issueKey = $(this).parents('.ghx-issue').data('issue-key');
+            window.open('https://jira.intuit.com/browse/' + issueKey);
+            e.stopPropagation();
+        });
+    }, 3000);
 
     console.yo = console.log;
     console.log = function(str){
@@ -186,14 +193,34 @@ function updateJiraBoard() {
 }
 
 function addSideMenu(){
+    $('#intu-side-menu').empty();
+
     $('body').append("<div id='intu-side-menu'></div>");
 
-    $('#intu-side-menu').html("\
-        <a href='javascript:pluginToggleStatus();' title='Issue Status'><img width=16 height=16 src=" + chrome.extension.getURL('images/status.png') + "></a><br>  \
-        <a href='javascript:pluginMaxSpace();' title='Maximize Space'><img width=16 height=16 src=" + chrome.extension.getURL('images/max.png') + "></a><br>  \
-        <a href='javascript:pluginHelp();' title='Tips'><img width=16 height=16 src=" + chrome.extension.getURL('images/info.png') + "></a><br>  \
-        <a href='javascript:pluginShowUserFilter();' title='Filter'><img width=16 height=16 src=" + chrome.extension.getURL('images/info.png') + "></a><br>  \
-        <a id='pluginMentionCount' href='javascript:pluginMention();'></a><br>  \
+    $('#intu-side-menu').append("<a href='javascript:pluginMaxSpace();' title='Maximize Space' class='masterTooltip'><img width=16 height=16 src=" + chrome.extension.getURL('images/max.png') + "></a>");
+    $('#intu-side-menu').append("<a href='javascript:pluginCardsWatching(\"" + myName() + "\");' title='Show cards I am watching' class='masterTooltip'><img width=16 height=16 src=" + chrome.extension.getURL('images/watching.png') + "></a>");
+
+    var sorts = {
+        label:        { image: "images/label.png", title: "Sort by labels", attr: "_label", order: "desc", valueType: "string" },
+        assignee:     { image: "images/assignee.png", title: "Sort by assignees", attr: "_displayName", order: "asc", valueType: "string" }
+//        story_points: { image: "images/story_points.png", title: "Sort by story points", attr: "_storyPoint", order: "desc", valueType: "integer" },
+    }
+    for(var sortKey in sorts) {
+        sort = sorts[sortKey];
+        var img = $('<img />').attr({ src: chrome.extension.getURL(sort['image']), width:'16', height:'16' })
+        var anchor = $('<a />').attr({ title: sort['title'], class: 'sort-icon masterTooltip', href: "javascript:window.sortAllJiraIssues('" + sort['attr'] + "', '" + sort['order'] + "', '" + sort['valueType'] + "')" });
+        $('#intu-side-menu').append(anchor.append(img));
+    };
+    $('#intu-side-menu').append("\
+        <a href='javascript:pluginShowUserFilter();' title='User Filters' class='masterTooltip'><img width=16 height=16 src=" + chrome.extension.getURL('images/users.png') + "></a>  \
+        <a href='javascript:pluginToggleStatus();' title='Issue Status' class='masterTooltip'><img width=16 height=16 src=" + chrome.extension.getURL('images/status.png') + "></a>  \
+        <a href='javascript:pluginHelp();' title='Help' class='masterTooltip'><img width=16 height=16 src=" + chrome.extension.getURL('images/info.png') + "></a>  \
+        <a id='pluginMentionCount' href='javascript:pluginMention();' title='You are mentioned' class='masterTooltip'></a>\
+        "
+    );
+
+    $('#intu-side-menu').append("<div id='intu-mention'></div>")
+    $('#intu-side-menu').append("\
         <div id='intu-filter-users' class='intu-container'><strong>Filter By Assignee:</strong> <a href='javascript:pluginClearUserFilter()' style='color:red'>Clear Filter</a> </div> \
         <div id='intu-status'>  \
             <div><strong>Number of Issues : </strong><span id='intu-status-issues'></span></div>  \
@@ -219,34 +246,6 @@ function addSideMenu(){
         "
     );
 
-    var sorts = {
-        assignee:     { image: "images/assignee.png", title: "Assignee", attr: "_displayName", order: "asc", valueType: "string" },
-        story_points: { image: "images/story_points.png", title: "Story Points", attr: "_storyPoint", order: "desc", valueType: "integer" },
-        label:        { image: "images/label.png", title: "Label", attr: "_label", order: "desc", valueType: "string" }
-    }
-
-    for(var sortKey in sorts) {
-        sort = sorts[sortKey];
-
-        var img = $('<img />').attr({
-            src: chrome.extension.getURL(sort['image']),
-            width:'16',
-            height:'16'
-        })
-        var anchor = $('<a />').attr({
-            title: sort['titles'],
-            class: 'sort-icon',
-            href: "javascript:window.sortAllJiraIssues('" + sort['attr'] + "', '" + sort['order'] + "', '" + sort['valueType'] + "')"
-        });
-
-        $('#intu-side-menu').append(anchor.append(img).append('<br>'));
-    };
-
-//    $('#intu-side-menu').append("<img class='masterTooltip' title='Show cards assigned to me' width=16 height=16 src=" + chrome.extension.getURL('images/me.png') + "><br>");
-    $('#intu-side-menu').append("<a href='javascript:pluginCardsWatching(\"" + myName() + "\");' title='Show cards I am watching'><img class='masterTooltip' title='Show cards I am watching'  width=16 height=16 src=" + chrome.extension.getURL('images/watching.png') + "></a><br>");
-    $('#intu-side-menu').append("<div id='intu-mention'></div>")
-
-
     $('.masterTooltip').hover(function(){
         var title = $(this).attr('title');
         $(this).data('tipText', title).removeAttr('title');
@@ -255,19 +254,13 @@ function addSideMenu(){
         $(this).attr('title', $(this).data('tipText'));
         $('.tooltip2').remove();
     }).mousemove(function(e) {
-        var mousey = e.pageY + 10; //Get Y coordinates
+        var mousey = e.pageY - 15; //Get Y coordinates
         $('.tooltip2').css({ top: mousey })
     });
 }
 
 function addPluginMenu(){
-    $('#intu-menu').html(
-        "<span id='intu-menu-container'>  \
-            <span id='intu-menu-load'></span>  \
-            <span id='intu-menu-error'></span>  \
-        </span>  \
-        "
-    );
+    $('#intu-menu').html("<span id='intu-menu-load'></span><span id='intu-menu-error'></span>");
     // <a href='javascript:window.go();'>Click me</a>
 }
 
@@ -479,18 +472,14 @@ function addHovercardTo(elIssue, fields, issueKey){
         for(var iMnt=0; iMnt < mentions.length; iMnt++){
             if(name == $(mentions[iMnt]).attr('rel')){
                 $('#intu-mention').append(issueLinkJsHtml(issueKey, 'mention').text(issueKey));
-                $('#intu-mention').append(fields.summary)
+                $('#intu-mention').append(' ' + fields.summary)
                 $('#intu-mention').append($(commentDisplayHtml(comment)));
                 $('#intu-mention').append('<br>');
 
-                var strMention = ' Mention';
                 var mCount = $('#pluginMentionCount').text();
                 if(mCount == '') mCount = '0 Mentions';
                 var nextCount = parseInt( mCount.substring(0,mCount.indexOf(' '))) + 1;
-                if(nextCount > 1){
-                    strMention = ' Mentions';
-                }
-                $('#pluginMentionCount').text(nextCount + strMention)
+                $('#pluginMentionCount').text(nextCount)
             }
         }
     }

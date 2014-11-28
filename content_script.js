@@ -185,16 +185,21 @@ function updateJiraBoard() {
     }
     else {
         $('#intu-side-menu').toggle(!planView);
-        $.get("https://jira.intuit.com/rest/greenhopper/1.0/rapidviewconfig/editmodel.json?rapidViewId=" + rapidViewID, function( data ) {
-            var query = (planView? planIssueQuery : workIssueQuery);
-            callJiraForIssues("https://jira.intuit.com/rest/api/latest/search?jql=filter=" + data.filterConfig.id + query + fields);
-        });
+        var query = (planView? planIssueQuery : workIssueQuery);
+        if(localStorage["jis" + rapidViewID] === undefined){
+            $.get("https://jira.intuit.com/rest/greenhopper/1.0/rapidviewconfig/editmodel.json?rapidViewId=" + rapidViewID, function( data ) {
+                localStorage["jis" + data.id] = data.filterConfig.id;
+                callJiraForIssues("https://jira.intuit.com/rest/api/latest/search?jql=filter=" + data.filterConfig.id + query + fields);
+            });
+        }
+        else {
+            callJiraForIssues("https://jira.intuit.com/rest/api/latest/search?jql=filter=" + localStorage["jis" + rapidViewID] + query + fields);
+        }
     }
 }
 
 function addSideMenu(){
-    $('#intu-side-menu').empty();
-
+    $('body').remove('#intu-side-menu');
     $('body').append("<div id='intu-side-menu'></div>");
 
     $('#intu-side-menu').append("<a href='javascript:pluginMaxSpace();' title='Maximize Space' class='masterTooltip'><img width=16 height=16 src=" + chrome.extension.getURL('images/max.png') + "></a>");
@@ -461,28 +466,13 @@ function addHovercardTo(elIssue, fields, issueKey){
     if(blockHtml.length > 0) blockHtml = '<h3>Block</h3>' + blockHtml;
 
     // Comment & Mentioning
-//    var myName = $('input[title=loggedInUser]').attr('value');
-    var name = myName();
     var commentHtml = "";
     if(fields.comment && fields.comment.comments.length > 0) {
-        comment = fields.comment.comments[fields.comment.comments.length-1];
-        commentHtml += commentDisplayHtml(comment);
-
-        var mentions = $('<p>' + comment.body + '</p>').find('a.user-hover');
-        for(var iMnt=0; iMnt < mentions.length; iMnt++){
-            if(name == $(mentions[iMnt]).attr('rel')){
-                $('#intu-mention').append(issueLinkJsHtml(issueKey, 'mention').text(issueKey));
-                $('#intu-mention').append(' ' + fields.summary)
-                $('#intu-mention').append($(commentDisplayHtml(comment)));
-                $('#intu-mention').append('<br>');
-
-                var mCount = $('#pluginMentionCount').text();
-                if(mCount == '') mCount = '0 Mentions';
-                var nextCount = parseInt( mCount.substring(0,mCount.indexOf(' '))) + 1;
-                $('#pluginMentionCount').text(nextCount)
-            }
-        }
+        var lastComment = fields.comment.comments[fields.comment.comments.length-1];
+        commentHtml += commentDisplayHtml(lastComment);
+        mentionHtml(issueKey, lastComment, fields.summary);
     }
+
     if(commentHtml.length > 0){
         commentHtml = "<h3>Last Comment</h3><div class='hovercard-comment'>" + commentHtml + "</div>";
     }

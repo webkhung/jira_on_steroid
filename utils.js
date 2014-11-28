@@ -46,6 +46,11 @@ function pullRequest(issueKey){
     return null;
 }
 
+function shortenName(name){
+    var parts = name.split(' ');
+    return parts[0] + ' ' + parts[parts.length-1].substring(0,1);
+}
+
 function myName(){
 //    return 'wbartolome';
     return $('input[title=loggedInUser]').attr('value');
@@ -72,6 +77,24 @@ function issueLinkHtml(issueKey, cssClass){
 
 function commentDisplayHtml(comment){
     return comment.body + " (" + comment.author.displayName + " on " + (new Date(comment.updated)).toLocaleString() + ")<br>";
+}
+
+function mentionHtml(issueKey, lastComment, summary){
+    var name = myName();
+    var mentions = $('<p>' + lastComment.body + '</p>').find('a.user-hover');
+    for(var iMnt=0; iMnt < mentions.length; iMnt++){
+        if(name == $(mentions[iMnt]).attr('rel')){
+            $('#intu-mention').append(issueLinkJsHtml(issueKey, 'mention').text(issueKey));
+            $('#intu-mention').append(' ' + summary)
+            $('#intu-mention').append($(commentDisplayHtml(lastComment)));
+            $('#intu-mention').append('<br>');
+
+            var mCount = $('#pluginMentionCount').text();
+            if(mCount == '') mCount = '0';
+            var nextCount = parseInt(mCount) + 1;
+            $('#pluginMentionCount').text(nextCount)
+        }
+    }
 }
 
 function resetIssueStatus(){
@@ -119,11 +142,6 @@ function addWatchersTo(elIssue, assignee, watchersField, watchersNames){
 
     if(watchers.length > 0)
         elIssue.find('.ghx-summary').append("<div class='intu-watchers'>" + watchers + "</div>");
-}
-
-function shortenName(name){
-    var parts = name.split(' ');
-    return parts[0] + ' ' + parts[parts.length-1].substring(0,1);
 }
 
 // External API Calls

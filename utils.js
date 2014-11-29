@@ -56,6 +56,10 @@ function myName(){
     return $('input[title=loggedInUser]').attr('value');
 }
 
+function isPlanView(){
+    return param('view').indexOf('planning') >= 0;
+}
+
 // HTML stuffs
 function issueLinkJsHtml(issueKey, cssClass){
     var anchor = $('<a />').attr({
@@ -109,43 +113,9 @@ function resetIssue(elIssue){
     elIssue.find('.github-icon, .intu-watchers, .open-icon').remove();
 }
 
-function addOpenIssueLinkTo(elIssue, issueKey){
-    if (elIssue.hasClass('ghx-issue-compact')) return
-    var img = $('<img />').attr({
-        src: chrome.extension.getURL("images/open.png"),
-        width:'16',
-        height:'15'
-    })
-    elIssue.find('.ghx-key').append(issueLinkJsHtml(issueKey, 'open-icon').append(img));
-}
-
-
-function addWatchersTo(elIssue, assignee, watchersField, watchersNames){
-    var watchers = '';
-    if(watchersField) {
-        for(var i=0; i < watchersField.length; i++){
-            var shortName = shortenName(watchersField[i].displayName); //.name
-            if(watchersNames.indexOf(shortName.toLowerCase()) >= 0){
-                watchers += (shortName + ", ");
-            }
-        }
-    }
-
-    if(assignee && watchers.indexOf(shortenName(assignee.displayName)) < 0){
-        shortName = shortenName(assignee.displayName);
-        if(watchersNames.indexOf(shortName.toLowerCase()) >= 0){
-            watchers = (shortName + ', ');
-        }
-    }
-
-    watchers = watchers.substring(0, watchers.length - 2);
-
-    if(watchers.length > 0)
-        elIssue.find('.ghx-summary').append("<div class='intu-watchers'>" + watchers + "</div>");
-}
-
 // External API Calls
 function callJiraForIssues(url){
+    console.log('--- callJiraForIssues' + url)
     updateLoadStatus('Calling JIRA API for issues details');
     $.get(url, processIssues, "json")
         .fail(function() {

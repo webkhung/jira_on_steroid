@@ -75,8 +75,8 @@ function setupDocument(){
         $('#intu-status').hide();
         $('#intu-menu-load').show();
 
-        updateLoadStatus('Updating Board');
-        loadPlugin();
+//        updateLoadStatus('Updating Board');
+//        loadPlugin();
     });
 
     $('body').append("<div class='hovercard'></div>");
@@ -84,13 +84,13 @@ function setupDocument(){
 }
 
 function loadPlugin(){
+    console.log('---loadPlugin');
     if (githubUsername.length > 0 && githubPassword.length > 0 && githubUser.length > 0 && githubRepo.length > 0) {
         getGithubIssues(githubUsername, githubPassword, githubUser, githubRepo);
     }
     addPluginMenu();
     addSideMenu();
     updateJiraBoard();
-    console.log('-loadPlugin');
 }
 
 function setupClientLoginPluginEvent() {
@@ -142,6 +142,7 @@ function changeGithubPage(){
 }
 
 function processIssues(data){
+    console.log('---processIssues');
     updateLoadStatus('Received ' + data.issues.length + ' issues details');
 
     $('.ghx-summary').removeAttr('title'); // Dont like their <a> title so remove it.
@@ -175,7 +176,7 @@ function updateJiraBoard() {
 
     var sprintID = param('sprint');
     var rapidViewID = param('rapidView');
-    var planView = param('view') == 'planning';
+    var planView = isPlanView();
 
     if (sprintID.length == 0 && rapidViewID.length == 0) {
         updateLoadStatus('Not a RapidBoard Url');
@@ -199,7 +200,11 @@ function updateJiraBoard() {
 }
 
 function addSideMenu(){
-    $('body').remove('#intu-side-menu');
+    if(isPlanView()){
+        return;
+    }
+
+    $('#intu-side-menu').remove();
     $('body').append("<div id='intu-side-menu'></div>");
 
     $('#intu-side-menu').append("<a href='javascript:pluginMaxSpace();' title='Maximize Space' class='masterTooltip'><img width=16 height=16 src=" + chrome.extension.getURL('images/max.png') + "></a>");
@@ -228,25 +233,11 @@ function addSideMenu(){
     $('#intu-side-menu').append("\
         <div id='intu-filter-users' class='intu-container'><strong>Filter By Assignee:</strong> <a href='javascript:pluginClearUserFilter()' style='color:red'>Clear Filter</a> </div> \
         <div id='intu-status'>  \
-            <div><strong>Number of Issues : </strong><span id='intu-status-issues'></span></div>  \
-            <div><strong>Number of Story Points : </strong><span id='intu-status-points'></span></div>  \
+            <div><strong># of Issues : </strong><span id='intu-status-issues'></span></div>  \
+            <div><strong># of Story Pts : </strong><span id='intu-status-points'></span></div>  \
         </div>  \
         <div id='intu-help'>  \
-            <strong>Pick what fields to show on hover</strong><br> \
-            Select what fields to show: Chrome -> Extensions -> Click on <u>Options</u> under this externsion<br> \
-            <strong>Labeling</strong><br> \
-            JIRA labels started with underscore \"_\" are displayed on the top right corner of the card. e.g. \"_InQA\", \"_FailedQA\"<br>  \
-            <strong>Sub tasks, blocking / blocked tasks</strong><br>  \
-            Any sub tasks and blocking/blocked by tasks are displayed on the top left corner of the card.<br>  \
-            <strong>Hygiene</strong><br>  \
-            If the hygiene checkbox is checked, a “Hygiene” label is displayed on the bottom left corner of the card.<br>  \
-            <strong>Sorting</strong><br>  \
-            This plugin supports sorted by users, story points, and labels.<br>  \
-            <strong>Keyboard Shortcut</strong><br>  \
-            Click on a JIRA card and press \"E\" to bring up the edit dialog.<br>  \
-            <strong>Github pull request</strong><br>  \
-            If you use Github to track pull requests, enter the Github info on the option page, and put the JIRA issue number to the pull request title.<br>The plugin would display the pull request label on the bottom right corner of the card.<br>  \
-            <br><div class='intu-container'>Please submit bugs, feature requests, feedback to <u>kelvin_hung@intuit.com</u>.<br>This is a private Chrome plugin, you can find the plugin <a href='https://chrome.google.com/webstore/detail/jira-on-steroid/allgccigpmbiidjamamjhhcpbclmdgln' target='_blank'>here</a></div>  \
+            <strong>For configurable settings, go to Chrome -> Extensions -> Click on <u>Options</u> under this extension\
         </div> \
         "
     );
@@ -380,6 +371,41 @@ function addLabelTo(elIssue, label, position){
     }
 }
 
+function addOpenIssueLinkTo(elIssue, issueKey){
+    if (elIssue.hasClass('ghx-issue-compact')) return
+    var img = $('<img />').attr({
+        src: chrome.extension.getURL("images/open.png"),
+        width:'16',
+        height:'15'
+    })
+    elIssue.find('.ghx-key').append(issueLinkJsHtml(issueKey, 'open-icon').append(img));
+}
+
+
+function addWatchersTo(elIssue, assignee, watchersField, watchersNames){
+    var watchers = '';
+    if(watchersField) {
+        for(var i=0; i < watchersField.length; i++){
+            var shortName = shortenName(watchersField[i].displayName); //.name
+            if(watchersNames.indexOf(shortName.toLowerCase()) >= 0){
+                watchers += (shortName + ", ");
+            }
+        }
+    }
+
+    if(assignee && watchers.indexOf(shortenName(assignee.displayName)) < 0){
+        shortName = shortenName(assignee.displayName);
+        if(watchersNames.indexOf(shortName.toLowerCase()) >= 0){
+            watchers = (shortName + ', ');
+        }
+    }
+
+    watchers = watchers.substring(0, watchers.length - 2);
+
+    if(watchers.length > 0)
+        elIssue.find('.ghx-summary').append("<span class='intu-watchers'>" + watchers + "</span>");
+}
+
 function pullRequestLabel(issueKey, elIssue){
     var pr = pullRequest(issueKey);
     if (pr == null){
@@ -470,7 +496,9 @@ function addHovercardTo(elIssue, fields, issueKey){
     if(fields.comment && fields.comment.comments.length > 0) {
         var lastComment = fields.comment.comments[fields.comment.comments.length-1];
         commentHtml += commentDisplayHtml(lastComment);
-        mentionHtml(issueKey, lastComment, fields.summary);
+        if(!isPlanView()) {
+            mentionHtml(issueKey, lastComment, fields.summary);
+        }
     }
 
     if(commentHtml.length > 0){

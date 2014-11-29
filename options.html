@@ -3,21 +3,30 @@
     <title>JIRA Plugin Setup</title>
 </head>
 <body>
-<h2>Select the fields you want to display on the hover</h2>
+<h2 style='text-decoration: underline'>Configure Hover</h2>
+<p>Select the fields you want to display on the hover</p>
 <input type='checkbox' name="hoverDescription" id="hoverDescription"> Description<br>
 <input type='checkbox' name="lastComment" id="lastComment"> Last Comment<br>
 <input type='checkbox' name="relatedCards" id="relatedCards"> Related Cards (sub/parent, blocking/blocked by)<br>
 <input type='checkbox' name="fixVersion" id="fixVersion"> fixVersion<br>
 
-<h2>Watchers to show on the cards</h2>
+<h2 style='text-decoration: underline'>Configure Cards</h2>
+<h3>Watchers</h3>
+<p>You can define what watchers to show on the cards.  For example, it is useful for QA team to use this field to show all the QA engineers so they know every card has a QA assigned.</p>
 <div>
-    Names (First name + Last name initial, separated by comma) <input type='text' name="watchersNames" id="watchersNames">
+    Watchers names (First name + Last name initial, separated by comma) <input type='text' name="watchersNames" id="watchersNames">
 </div>
 
+<h3>Labeling</h3>
+JIRA labels started with underscore "_" are displayed on the top right corner of the card. e.g. "_InQA", "_FailedQA"
+<h3>Sub tasks, blocking / blocked tasks</h3>
+Any sub tasks and blocking/blocked by tasks are displayed on the top left corner of the card.
+<h3>Hygiene</h3>
+If the hygiene checkbox is checked, a “Hygiene” label is displayed on the bottom left corner of the card.
 
-<hr>
 
-<h2>Github Integration For Pull Request</h2>
+<h2 style='text-decoration: underline'>Github Integration For Pull Request</h2>
+If you use Github to track pull requests, enter the Github info below and put the JIRA issue number to the enf of the pull request title.<br>The plugin would display the pull request label on the bottom right corner of the card.<br><br>
 <div>
     Username <input type='text' name="githubUsername" id="githubUsername">
 </div>
@@ -31,27 +40,14 @@
 <div>
     Repo <input type='text' name="githubRepo" id="githubRepo">
 </div>
-
+<br><br>
 <button id='saveButton'>Save</button>
 <script type="text/javascript" src="options.js"></script>
 
 <hr>
 
-<strong>Pick what fields to show on hover</strong><br>
-Select what fields to show: Chrome -&gt; Extensions -&gt; Click on <u>Options</u> under this externsion<br><br>
-<strong>Labeling</strong><br>
-JIRA labels started with underscore "_" are displayed on the top right corner of the card. e.g. "_InQA", "_FailedQA"<br><br>
-<strong>Sub tasks, blocking / blocked tasks</strong><br>
-Any sub tasks and blocking/blocked by tasks are displayed on the top left corner of the card.<br><br>
-<strong>Hygiene</strong><br>
-If the hygiene checkbox is checked, a “Hygiene” label is displayed on the bottom left corner of the card.<br><br>
-<strong>Sorting</strong><br>
-This plugin supports sorted by users, story points, and labels.<br><br>
-<strong>Keyboard Shortcut</strong><br>
-Click on a JIRA card and press "E" to bring up the edit dialog.<br><br>
-<strong>Github pull request</strong><br>
-If you use Github to track pull requests, enter the Github info on the option page, and put the JIRA issue number to the pull request title.<br>The plugin would display the pull request label on the bottom right corner of the card.<br><br>
 Please submit bugs, feature requests, feedback to <u>kelvin_hung@intuit.com</u>.<br>This is a private Chrome plugin, you can find the plugin <a href="https://chrome.google.com/webstore/detail/jira-on-steroid/allgccigpmbiidjamamjhhcpbclmdgln" target="_blank">here</a>
+
 
 </body>
 </html>

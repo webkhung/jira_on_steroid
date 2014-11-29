@@ -21,10 +21,9 @@ if(window.location.href.indexOf('RapidBoard') > 0) {
         setupDocument();
     });
 
-    // hello will be an event sent from the document when call window.go()
-    document.addEventListener("hello", function(data) {
-        alert('cs');
-        updateJiraBoard(); // chrome.runtime.sendMessage("test"); What does this do?
+    // go will be an event sent from the document when call window.go()
+    document.addEventListener("go", function(data) {
+        updateJiraBoard();
     });
 
     document.addEventListener("loadPlugin", function(data) {
@@ -34,7 +33,6 @@ if(window.location.href.indexOf('RapidBoard') > 0) {
 else {
     setInterval(function() {
         if (window.location.href.indexOf('https://github.com/live-community/live_community/pull/') == 0){
-            console.log('modify');
             changeGithubPage();
         }
     }, 3000);
@@ -45,7 +43,7 @@ else {
 function setupDocument(){
     // Inject Js to document
     var script = document.createElement('script');
-    script.appendChild(document.createTextNode('('+ setupClientLoginPluginEvent +')();'));
+    script.appendChild(document.createTextNode('('+ setupClientLoadPluginEvent +')();'));
     (document.body || document.head || document.documentElement).appendChild(script);
 
     // Inject Css to document
@@ -69,14 +67,11 @@ function setupDocument(){
         s.parentNode.removeChild(s);
     };
 
-    // Trigger updateJireBoard when the buttons / filters on the board are clicked.
+    // Hide buttons / filters on the board are clicked.
     $('#work-toggle, #plan-toggle').on('click', function(){
         $('#intu-status-issues').html('');
         $('#intu-status').hide();
         $('#intu-menu-load').show();
-
-//        updateLoadStatus('Updating Board');
-//        loadPlugin();
     });
 
     $('body').append("<div class='hovercard'></div>");
@@ -88,16 +83,14 @@ function loadPlugin(){
     if (githubUsername.length > 0 && githubPassword.length > 0 && githubUser.length > 0 && githubRepo.length > 0) {
         getGithubIssues(githubUsername, githubPassword, githubUser, githubRepo);
     }
-    addPluginMenu();
-    addSideMenu();
     updateJiraBoard();
 }
 
-function setupClientLoginPluginEvent() {
+function setupClientLoadPluginEvent() {
     // Allow document to call window.go()
     window.go = function() {
         var event = document.createEvent('Event');
-        event.initEvent('hello');
+        event.initEvent('go');
         document.dispatchEvent(event);
     }
 
@@ -159,10 +152,10 @@ function processIssues(data){
             prLabel = pullRequestLabel(issue.key, elIssue);
             addLabelTo(elIssue, prLabel, 'bottom-right');
         }
-        var isPullRequest =  prLabel.length > 0;
+        var issueIsPR =  prLabel.length > 0;
 
-        addLabelTo(elIssue, issueLabel(fields.labels, isPullRequest, elIssue), 'top-right');
-        setAttributesTo(elIssue, fields, isPullRequest);
+        addLabelTo(elIssue, createLabelFrom(fields.labels, issueIsPR, elIssue), 'top-right');
+        addAttributesTo(elIssue, fields, issueIsPR);
         addOpenIssueLinkTo(elIssue, issue.key);
         addWatchersTo(elIssue, fields.assignee, fields.customfield_11712, watchersNames);
     });
@@ -172,6 +165,8 @@ function processIssues(data){
 
 function updateJiraBoard() {
     console.log('updateJiraBoard');
+
+    addPluginMenu();
     resetIssueStatus();
 
     var sprintID = param('sprint');
@@ -199,7 +194,10 @@ function updateJiraBoard() {
     }
 }
 
-function addSideMenu(){
+function addPluginMenu(){
+    $('#intu-menu').html("<span id='intu-menu-load'></span><span id='intu-menu-error'></span>");
+    // <a href='javascript:window.go();'>Click me</a>
+
     if(isPlanView()){
         return;
     }
@@ -250,14 +248,9 @@ function addSideMenu(){
         $(this).attr('title', $(this).data('tipText'));
         $('.tooltip2').remove();
     }).mousemove(function(e) {
-        var mousey = e.pageY - 15; //Get Y coordinates
-        $('.tooltip2').css({ top: mousey })
-    });
-}
-
-function addPluginMenu(){
-    $('#intu-menu').html("<span id='intu-menu-load'></span><span id='intu-menu-error'></span>");
-    // <a href='javascript:window.go();'>Click me</a>
+            var mousey = e.pageY - 15; //Get Y coordinates
+            $('.tooltip2').css({ top: mousey })
+        });
 }
 
 function setIssueStatus(statusCounts, statusStoryPoints) {
@@ -278,7 +271,7 @@ function setIssueStatus(statusCounts, statusStoryPoints) {
     $('#intu-status-points').html(strStatusStoryPoints);
 }
 
-function setAttributesTo(elIssue, fields, isPullRequest){
+function addAttributesTo(elIssue, fields, issueIsPR){
     var storyPoint = 0;
     if (fields.customfield_11703) storyPoint = fields.customfield_11703;
 
@@ -289,7 +282,7 @@ function setAttributesTo(elIssue, fields, isPullRequest){
     if (fields.priority) fields.priority.id;
 
     var label = "";
-    if (isPullRequest) label = "Pull Request";
+    if (issueIsPR) label = "Pull Request";
 
     labels = fields.labels.sort();
     if (labels.length > 0){
@@ -327,9 +320,8 @@ function setAttributesTo(elIssue, fields, isPullRequest){
     }
 }
 
-function issueLabel(labels, isPullRequest, elIssue){
+function createLabelFrom(labels, issueIsPR, elIssue){
     var displayLabel = '';
-
     labels = labels.sort();
 
     for(var j=0; j<labels.length; j++){
@@ -340,11 +332,10 @@ function issueLabel(labels, isPullRequest, elIssue){
     }
 
     if (displayLabel.length > 0) {
-        var color = stringToColour(displayLabel);
-        elIssue.css('background-color', 'rgba('+ hexToRgb(color) + ',0.2)');
+        elIssue.css('background-color', 'rgba('+ hexToRgb(stringToColour(displayLabel)) + ',0.2)');
     }
 
-    if(isPullRequest){
+    if(issueIsPR){
         if (displayLabel.length == 0){
             elIssue.css('background-color', '#C9FEFE');
         }

@@ -6,6 +6,10 @@
     border: 1px soild #aaaaaa;
 }
 
+.ghx-issue-compact .intu-label-top-right, .ghx-issue-compact .intu-label-bottom-right {
+    right:67px;
+}
+
 .intu-label-top-right {
     top:0px;
     right:0px;
@@ -122,6 +126,8 @@
     margin-left: 5px;
     display: none;
 }
+
+.ghx-issue-compact .intu-watchers { margin-left: 10px; }
 
 .tooltip2 {
     display:none;

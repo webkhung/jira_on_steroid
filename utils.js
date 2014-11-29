@@ -42,7 +42,6 @@ function pullRequest(issueKey){
             }
         }
     }
-
     return null;
 }
 
@@ -58,6 +57,18 @@ function myName(){
 
 function isPlanView(){
     return param('view').indexOf('planning') >= 0;
+}
+
+function resetIssueStatus(){
+    statusCounts = {New: 0, InProgress: 0, Blocked: 0, Verify: 0, Closed: 0, Deferred: 0};
+    statusStoryPoints = {New: 0, InProgress: 0, Blocked: 0, Verify: 0, Closed: 0, Deferred: 0};
+}
+
+function resetIssue(elIssue){
+    elIssue.attr('lc-sort-order', 0);
+    elIssue.css("background-color", "");
+    elIssue.css('background-image', 'none');
+    elIssue.find('.github-icon, .intu-watchers, .open-icon').remove();
 }
 
 // HTML stuffs
@@ -99,18 +110,6 @@ function mentionHtml(issueKey, lastComment, summary){
             $('#pluginMentionCount').text(nextCount)
         }
     }
-}
-
-function resetIssueStatus(){
-    statusCounts = {New: 0, InProgress: 0, Blocked: 0, Verify: 0, Closed: 0, Deferred: 0};
-    statusStoryPoints = {New: 0, InProgress: 0, Blocked: 0, Verify: 0, Closed: 0, Deferred: 0};
-}
-
-function resetIssue(elIssue){
-    elIssue.attr('lc-sort-order', 0);
-    elIssue.css("background-color", "");
-    elIssue.css('background-image', 'none');
-    elIssue.find('.github-icon, .intu-watchers, .open-icon').remove();
 }
 
 // External API Calls

@@ -1,20 +1,18 @@
-var githubIssues = [];
-var githubUsername, githubPassword, githubUser, githubRepo, watchersNames, hoverDescription, lastComment, relatedCards, fixVersion;
+var hostname = "https://" + window.location.hostname;
+var hoverDescription, showLastComment, relatedCards, fixVersion;
 var statusCounts = {New: 0, InProgress: 0, Blocked: 0, Verify: 0, Closed: 0, Deferred: 0};
 var statusStoryPoints = {New: 0, InProgress: 0, Blocked: 0, Verify: 0, Closed: 0, Deferred: 0};
-var fields = "&fields=key,created,updated,status,summary,description,parent,labels,customfield_11703,customfield_14107,customfield_13624,customfield_11712,priority,subtasks,assignee,issuelinks,fixVersions,comment&maxResults=200";
+var fields = "&maxResults=200&fields=key,created,updated,status,summary,description,parent,labels,priority,subtasks,assignee,issuelinks,fixVersions,comment" + extraFields;
 var planIssueQuery = " and issuetype in standardIssueTypes() and ((sprint is empty and resolutiondate is empty) or sprint in openSprints() or sprint in futureSprints())"
 var workIssueQuery = " and (sprint in openSprints())";
+var jiraGithub = new JiraGithub();
 
 if(window.location.href.indexOf('RapidBoard') > 0) {
     chrome.runtime.sendMessage({method: "getLocalStorage", key: "settings"}, function(response) {
-        githubUsername = response.githubUsername;
-        githubPassword = response.githubPassword;
-        githubUser = response.githubUser;
-        githubRepo = response.githubRepo;
+        jiraGithub.initVariables(response);
         watchersNames = response.watchersNames;
         hoverDescription = response.hoverDescription == 'true';
-        lastComment = response.lastComment == 'true';
+        showLastComment = response.lastComment == 'true';
         relatedCards = response.relatedCards == 'true';
         fixVersion = response.fixVersion == 'true';
 
@@ -31,13 +29,7 @@ if(window.location.href.indexOf('RapidBoard') > 0) {
     });
 }
 else {
-    setInterval(function() {
-        if (window.location.href.indexOf('https://github.com/live-community/live_community/pull/') == 0){
-            changeGithubPage();
-        }
-    }, 3000);
-
-    changeGithubPage();
+    jiraGithub.changeGithubPage();
 }
 
 function setupDocument(){
@@ -80,9 +72,7 @@ function setupDocument(){
 
 function loadPlugin(){
     console.log('---loadPlugin');
-    if (githubUsername.length > 0 && githubPassword.length > 0 && githubUser.length > 0 && githubRepo.length > 0) {
-        getGithubIssues(githubUsername, githubPassword, githubUser, githubRepo);
-    }
+    jiraGithub.getGithubIssues();
     updateJiraBoard();
 }
 
@@ -124,16 +114,6 @@ function setupClientLoadPluginEvent() {
     }
 }
 
-function changeGithubPage(){
-    if($('.js-issue-title').text().indexOf('LCP-') > 0) {
-        var issueTitle = $('.js-issue-title').text();
-        var issueTitleNoLcp = issueTitle.substring(0, issueTitle.indexOf('LCP-'));
-        var lcp = issueTitle.substring(issueTitle.indexOf('LCP-'));
-        $('.js-issue-title').text(issueTitleNoLcp);
-        $('.js-issue-title').append(issueLinkHtml(lcp, '').text(lcp));
-    }
-}
-
 function processIssues(data){
     console.log('---processIssues');
     updateLoadStatus('Received ' + data.issues.length + ' issues details');
@@ -147,12 +127,7 @@ function processIssues(data){
         resetIssue(elIssue);
         addHovercardTo(elIssue, fields, issue.key);
 
-        var prLabel = '';
-        if (githubIssues.length > 0){
-            prLabel = pullRequestLabel(issue.key, elIssue);
-            addLabelTo(elIssue, prLabel, 'bottom-right');
-        }
-        var issueIsPR =  prLabel.length > 0;
+        var issueIsPR = jiraGithub.addPullRequestLabel(issue.key, elIssue);
 
         addLabelTo(elIssue, createLabelFrom(fields.labels, issueIsPR, elIssue), 'top-right');
         addAttributesTo(elIssue, fields, issueIsPR);
@@ -177,19 +152,19 @@ function updateJiraBoard() {
         updateLoadStatus('Not a RapidBoard Url');
     }
     else if (sprintID !== undefined && sprintID != '') {
-        callJiraForIssues("https://jira.intuit.com/rest/api/latest/search?jql=sprint%3D" + sprintID + fields);
+        callJiraForIssues(hostname + "/rest/api/latest/search?jql=sprint%3D" + sprintID + fields);
     }
     else {
         $('#intu-side-menu').toggle(!planView);
         var query = (planView? planIssueQuery : workIssueQuery);
         if(localStorage["jis" + rapidViewID] === undefined){
-            $.get("https://jira.intuit.com/rest/greenhopper/1.0/rapidviewconfig/editmodel.json?rapidViewId=" + rapidViewID, function( data ) {
+            $.get(hostname + "/rest/greenhopper/1.0/rapidviewconfig/editmodel.json?rapidViewId=" + rapidViewID, function( data ) {
                 localStorage["jis" + data.id] = data.filterConfig.id;
-                callJiraForIssues("https://jira.intuit.com/rest/api/latest/search?jql=filter=" + data.filterConfig.id + query + fields);
+                callJiraForIssues(hostname + "/rest/api/latest/search?jql=filter=" + data.filterConfig.id + query + fields);
             });
         }
         else {
-            callJiraForIssues("https://jira.intuit.com/rest/api/latest/search?jql=filter=" + localStorage["jis" + rapidViewID] + query + fields);
+            callJiraForIssues(hostname + "/rest/api/latest/search?jql=filter=" + localStorage["jis" + rapidViewID] + query + fields);
         }
     }
 }
@@ -397,44 +372,6 @@ function addWatchersTo(elIssue, assignee, watchersField, watchersNames){
         elIssue.find('.ghx-summary').append("<span class='intu-watchers'>" + watchers + "</span>");
 }
 
-function pullRequestLabel(issueKey, elIssue){
-    var pr = pullRequest(issueKey);
-    if (pr == null){
-        return "";
-    }
-
-    // var psUrl = pr['url'];
-    var psDaysOld = Math.round(((new Date) - (new Date(pr['created_at']))) / (1000 * 60 * 60 * 24));
-    var psLabel = '';
-
-    for(var i=0; i < pr['labels'].length; i++) {
-        psLabel += pr['labels'][i]['name'] + ' ';
-    }
-
-    var prInfo = psLabel + ' (PR: ' + psDaysOld + ' days)';
-
-    if (psDaysOld > 10) {
-        var imgURL = chrome.extension.getURL('images/web.png');
-        elIssue.css('background-image', 'url("' + imgURL + '")');
-    }
-
-    var img = $('<img />').attr({
-        src: chrome.extension.getURL("images/github.png"),
-        width:'16',
-        height:'15',
-        class: 'github-icon'
-    })
-    var anchor = $('<a />').attr({
-        href: "javascript:void(0);",
-        onclick: "window.open('" + pr['pull_request']['html_url'] + "')",
-        target: "_blank"
-    });
-
-    elIssue.find('.ghx-key').append(anchor.append(img));
-
-    return prInfo;
-}
-
 function addHovercardTo(elIssue, fields, issueKey){
     // Subtasks
     var subtaskHtml = '';
@@ -531,6 +468,11 @@ function addHovercardTo(elIssue, fields, issueKey){
         summaryHtml = "<h3>Summary</h3>" + fields.summary;
     }
 
+    var descriptionHtml = '';
+    if (fields.description && hoverDescription) {
+        descriptionHtml = "<h3>Description</h3><div class='hovercard-desc'>" + fields.description + "</div>";
+    }
+
     // Attach hovercard event to each jira issue element
     elIssue.find('.ghx-issue-fields:first, .ghx-key').first().hovercard({
         detailsHTML:
@@ -540,11 +482,11 @@ function addHovercardTo(elIssue, fields, issueKey){
                 fields.status.name +
                 (fixVersion ? fixVersionHtml : "")+
                 summaryHtml +
-                (hoverDescription ? "<h3>Description</h3><div class='hovercard-desc'>" + fields.description + "</div>" : "")+
-                (lastComment ? parentHtml : "")+
-                (lastComment ? subtaskHtml : "")+
-                (lastComment ? blockHtml : "")+
-                (relatedCards? commentHtml : ""),
+                descriptionHtml +
+                (relatedCards ? parentHtml : "")+
+                (relatedCards ? subtaskHtml : "")+
+                (relatedCards ? blockHtml : "")+
+                (showLastComment? commentHtml : ""),
         width: 450,
         relatedIssues: subtaskKeys.concat(parentKey),
         blocks: blocks

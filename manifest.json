@@ -15,13 +15,14 @@
   "options_page": "options.html",
   "content_scripts": [
     {
-      "matches": ["https://jira.intuit.com/secure/RapidBoard.jspa*", "https://github.com/live-community/live_community/pull*"],
+      "matches": ["https://jira.intuit.com/secure/RapidBoard.jspa*", "https://*.atlassian.net/*", "https://github.com/live-community/live_community/pull*"],
       "css": ["lc-jira-color.css"],
-      "js": ["lib/base64.js", "lib/underscore-min.js", "github.js", "jquery.js", "utils.js", "content_script.js"]
+      "js": ["lib/base64.js", "lib/underscore-min.js", "github.js", "jquery.js", "utils.js", "jira_github.js", "intuit.js", "content_script.js"]
     }
   ],
   "web_accessible_resources": [
       "images/web.png",
+      "images/web2.png",
       "images/assignee.png",
       "images/story_points.png",
       "images/priority.png",

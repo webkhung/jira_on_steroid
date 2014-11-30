@@ -121,16 +121,3 @@ function callJiraForIssues(url){
             updateLoadStatus('Error calling JIRA search api"', true);
         });
 }
-
-function getGithubIssues(githubUsername, githubPassword, githubUser, githubRepo) {
-    var github = new window.Github({
-        username: githubUsername,
-        password: githubPassword,
-        auth: "basic"
-    });
-    var issues = github.getIssues(githubUser, githubRepo); // 'live-community', 'live_community'
-    githubIssues = [];
-    issues.list('open', function(err, cbIssues) {
-        githubIssues = cbIssues;
-    });
-}

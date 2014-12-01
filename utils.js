@@ -75,7 +75,6 @@ function resetIssue(elIssue){
 function issueLinkJsHtml(issueKey, cssClass){
     var anchor = $('<a />').attr({
         href: "javascript:void(0);",
-        target: "_blank",
         class: cssClass + " issueLink"
     });
     return anchor;

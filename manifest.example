@@ -15,7 +15,7 @@
   "options_page": "options_others.html",
   "content_scripts": [
     {
-      "matches": ["https://jira.intuit.com/secure/RapidBoard.jspa*", "https://github.com/live-community/live_community/pull*"],
+      "matches": ["https://jira.intuit.com/secure/RapidBoard.jspa*",  "https://*.atlassian.net/*", "https://github.com/live-community/live_community/pull*"],
       "css": ["lc-jira-color.css"],
       "js": ["lib/base64.js", "lib/underscore-min.js", "github.js", "jquery.js", "utils.js", "jira_github.js", "intuit.js", "content_script.js"]
     }

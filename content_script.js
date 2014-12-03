@@ -2,7 +2,8 @@ var hostname = "https://" + window.location.hostname;
 var hoverDescription, showLastComment, relatedCards, fixVersion;
 var statusCounts = {New: 0, InProgress: 0, Blocked: 0, Verify: 0, Closed: 0, Deferred: 0};
 var statusStoryPoints = {New: 0, InProgress: 0, Blocked: 0, Verify: 0, Closed: 0, Deferred: 0};
-var fields = "&maxResults=200&fields=key,created,updated,status,summary,description,parent,labels,priority,subtasks,assignee,issuelinks,fixVersions,comment" + extraFields;
+var workFields = "&maxResults=1000&fields=key,created,updated,status,summary,description,parent,labels,subtasks,assignee,issuelinks,fixVersions,comment,components" + extraFields;
+var planFields = "&maxResults=1000&fields=key,created,updated,status,summary,description,parent,labels,subtasks,assignee,issuelinks,fixVersions,comment,components";
 var planIssueQuery = " and issuetype in standardIssueTypes() and ((sprint is empty and resolutiondate is empty) or sprint in openSprints() or sprint in futureSprints())"
 var workIssueQuery = " and (sprint in openSprints())";
 var jiraGithub = new JiraGithub();
@@ -29,7 +30,7 @@ if(window.location.href.indexOf('RapidBoard') > 0) {
     });
 }
 else {
-    jiraGithub.changeGithubPage();
+    jiraGithub.setIntervalChangeGithubPage();
 }
 
 function setupDocument(){
@@ -152,30 +153,37 @@ function updateJiraBoard() {
         updateLoadStatus('Not a RapidBoard Url');
     }
     else if (sprintID !== undefined && sprintID != '') {
-        callJiraForIssues(hostname + "/rest/api/latest/search?jql=sprint%3D" + sprintID + fields);
+        callJiraForIssues(hostname + "/rest/api/latest/search?jql=sprint%3D" + sprintID + searchFields());
     }
     else {
-        $('#intu-side-menu').toggle(!planView);
+//        $('#intu-side-menu').toggle(!planView);
         var query = (planView? planIssueQuery : workIssueQuery);
         if(localStorage["jis" + rapidViewID] === undefined){
             $.get(hostname + "/rest/greenhopper/1.0/rapidviewconfig/editmodel.json?rapidViewId=" + rapidViewID, function( data ) {
                 localStorage["jis" + data.id] = data.filterConfig.id;
-                callJiraForIssues(hostname + "/rest/api/latest/search?jql=filter=" + data.filterConfig.id + query + fields);
+                callJiraForIssues(hostname + "/rest/api/latest/search?jql=filter=" + data.filterConfig.id + query + searchFields());
             });
         }
         else {
-            callJiraForIssues(hostname + "/rest/api/latest/search?jql=filter=" + localStorage["jis" + rapidViewID] + query + fields);
+            callJiraForIssues(hostname + "/rest/api/latest/search?jql=filter=" + localStorage["jis" + rapidViewID] + query + searchFields());
         }
     }
+}
+
+function searchFields(){
+    if(isPlanView())
+        return planFields;
+    else
+        return workFields;
 }
 
 function addPluginMenu(){
     $('#intu-menu').html("<span id='intu-menu-load'></span><span id='intu-menu-error'></span>");
     // <a href='javascript:window.go();'>Click me</a>
 
-    if(isPlanView()){
-        return;
-    }
+//    if(isPlanView()){
+//        return;
+//    }
 
     $('#intu-side-menu').remove();
     $('body').append("<div id='intu-side-menu'></div>");
@@ -184,18 +192,19 @@ function addPluginMenu(){
     $('#intu-side-menu').append("<a href='javascript:pluginCardsWatching(\"" + myName() + "\");' title='Show cards I am watching' class='masterTooltip'><img width=16 height=16 src=" + chrome.extension.getURL('images/watching.png') + "></a>");
 
     var sorts = {
-        label:        { image: "images/label.png", title: "Sort by labels", attr: "_label", order: "desc", valueType: "string" },
-        assignee:     { image: "images/assignee.png", title: "Sort by assignees", attr: "_displayName", order: "asc", valueType: "string" }
+        label:        { id: 'sortLabel', image: "images/label.png", title: "Sort by labels", attr: "_label", order: "desc", valueType: "string" },
+        assignee:     { id: 'sortAssignee', image: "images/assignee.png", title: "Sort by assignees", attr: "_displayName", order: "asc", valueType: "string" }
 //        story_points: { image: "images/story_points.png", title: "Sort by story points", attr: "_storyPoint", order: "desc", valueType: "integer" },
     }
     for(var sortKey in sorts) {
         sort = sorts[sortKey];
         var img = $('<img />').attr({ src: chrome.extension.getURL(sort['image']), width:'16', height:'16' })
-        var anchor = $('<a />').attr({ title: sort['title'], class: 'sort-icon masterTooltip', href: "javascript:window.sortAllJiraIssues('" + sort['attr'] + "', '" + sort['order'] + "', '" + sort['valueType'] + "')" });
+        var anchor = $('<a />').attr({ id: sort['id'], title: sort['title'], class: 'sort-icon masterTooltip', href: "javascript:window.sortAllJiraIssues('" + sort['attr'] + "', '" + sort['order'] + "', '" + sort['valueType'] + "')" });
         $('#intu-side-menu').append(anchor.append(img));
     };
     $('#intu-side-menu').append("\
-        <a href='javascript:pluginShowUserFilter();' title='User Filters' class='masterTooltip'><img width=16 height=16 src=" + chrome.extension.getURL('images/users.png') + "></a>  \
+        <a href='javascript:pluginShowComponentFilter();' id='componentFilter' title='Component Filters' class='masterTooltip'><img width=16 height=16 src=" + chrome.extension.getURL('images/component.png') + "></a>  \
+        <a href='javascript:pluginShowUserFilter();' id='userFilter' title='User Filters' class='masterTooltip'><img width=16 height=16 src=" + chrome.extension.getURL('images/users.png') + "></a>  \
         <a href='javascript:pluginToggleStatus();' title='Issue Status' class='masterTooltip'><img width=16 height=16 src=" + chrome.extension.getURL('images/status.png') + "></a>  \
         <a href='javascript:pluginHelp();' title='Help' class='masterTooltip'><img width=16 height=16 src=" + chrome.extension.getURL('images/info.png') + "></a>  \
         <a id='pluginMentionCount' href='javascript:pluginMention();' title='You are mentioned' class='masterTooltip'></a>\
@@ -204,13 +213,14 @@ function addPluginMenu(){
 
     $('#intu-side-menu').append("<div id='intu-mention'></div>")
     $('#intu-side-menu').append("\
-        <div id='intu-filter-users' class='intu-container'><strong>Filter By Assignee:</strong> <a href='javascript:pluginClearUserFilter()' style='color:red'>Clear Filter</a> </div> \
+        <div id='intu-filter-components' class='intu-container'><strong>Filter By Component:</strong> <a href='javascript:pluginClearFilter()' style='color:red'>Clear Filter</a> </div> \
+        <div id='intu-filter-users' class='intu-container'><strong>Filter By Assignee:</strong> <a href='javascript:pluginClearFilter()' style='color:red'>Clear Filter</a> </div> \
         <div id='intu-status'>  \
             <div><strong># of Issues : </strong><span id='intu-status-issues'></span></div>  \
             <div><strong># of Story Pts : </strong><span id='intu-status-points'></span></div>  \
         </div>  \
         <div id='intu-help'>  \
-            <strong>For configurable settings, go to Chrome -> Extensions -> Click on <u>Options</u> under this extension\
+            <strong>For configurable settings, go to the <a href='chrome-extension://allgccigpmbiidjamamjhhcpbclmdgln/options.html' target='_blank'>options</a> page. \
         </div> \
         "
     );
@@ -253,9 +263,6 @@ function addAttributesTo(elIssue, fields, issueIsPR){
     var displayName = '';
     if (fields.assignee) displayName = fields.assignee.displayName;
 
-    var priority = 5;
-    if (fields.priority) fields.priority.id;
-
     var label = "";
     if (issueIsPR) label = "Pull Request";
 
@@ -280,18 +287,40 @@ function addAttributesTo(elIssue, fields, issueIsPR){
 
     elIssue.attr('_displayName', displayName);
     elIssue.attr('_storyPoint', storyPoint);
-    elIssue.attr('_priority', priority);
     elIssue.attr('_label', label);
     elIssue.attr('_watchers', watchers);
 
     // Add name filter
-    if(displayName.length > 0 && $(".intu-filter-user[_displayName='" + displayName + "']").length == 0){
+    if(displayName.length > 0 && $(".intu-filter-user[_displayName='" + displayName.replace(/'/g, "\\'") + "']").length == 0){
         var linkUser = $('<a />').attr({
             class: 'intu-filter-user',
             href: "javascript:pluginFilterUser('" + displayName + "')",
-            _displayName: displayName
+            _displayName: displayName.replace(/'/g, "\\'")
         }).text(displayName);
         $('#intu-filter-users').append(linkUser);
+    }
+
+    if(fields.components){
+        for(var i=0; i<fields.components.length; i++){
+            var componentName = fields.components[i].name;
+
+            // Add component filter
+            if(componentName.length > 0 && $(".intu-filter-component[_componentName='" + componentName.replace(/'/g, "\\'") + "']").length == 0){
+                var linkComponent = $('<a />').attr({
+                    class: 'intu-filter-component',
+                    href: "javascript:pluginFilterComponent('" + componentName + "')",
+                    _componentName: componentName.replace(/'/g, "\\'")
+                }).text(componentName);
+                $('#intu-filter-components').append(linkComponent);
+            }
+
+            var currentComponent = '';
+            if(elIssue.attr('_componentName') !== undefined)
+                currentComponent = elIssue.attr('_componentName')
+            elIssue.attr('_componentName',  currentComponent + "|" + componentName);
+
+            $('#componentFilter').css('display', 'block');
+        }
     }
 }
 
@@ -308,6 +337,7 @@ function createLabelFrom(labels, issueIsPR, elIssue){
 
     if (displayLabel.length > 0) {
         elIssue.css('background-color', 'rgba('+ hexToRgb(stringToColour(displayLabel)) + ',0.2)');
+        $('#sortLabel').css('display', 'block');
     }
 
     if(issueIsPR){
@@ -361,7 +391,7 @@ function addWatchersTo(elIssue, assignee, watchersField, watchersNames){
 
     if(assignee && watchers.indexOf(shortenName(assignee.displayName)) < 0){
         shortName = shortenName(assignee.displayName);
-        if(watchersNames.indexOf(shortName.toLowerCase()) >= 0){
+        if(watchersNames.toLowerCase().indexOf(shortName.toLowerCase()) >= 0){
             watchers = (shortName + ', ');
         }
     }

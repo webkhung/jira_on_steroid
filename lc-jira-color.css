@@ -40,12 +40,14 @@
     background-color: #ff65f0;
 }
 
+#intu-side-menu > #componentFilter, #intu-side-menu > #sortLabel { display: none; }
+
 #intu-side-menu {
-    padding: 7px;
+    padding: 7px 4px;
     border: 1px solid #333;
     position: absolute;
     top: 250px;
-    right: 0px;
+    right: 10px;
     background-color: #FFD738;
     z-index: 1;
     font-size: 13px;
@@ -77,7 +79,7 @@
     color: red;
 }
 
-#intu-status, #intu-help, #intu-filter-users, #intu-mention {
+#intu-status, #intu-help, #intu-filter-users, #intu-mention, #intu-filter-components {
     display: none;
     position: absolute;
     width: 500px;
@@ -94,7 +96,7 @@
     font-weight: bold;
 }
 
-.intu-filter-user { padding: 0 5px; }
+.intu-filter-user, .intu-filter-component { padding: 0 5px; }
 
 .intu-container {
     background-color: #fff;

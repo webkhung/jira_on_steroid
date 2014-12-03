@@ -9,10 +9,10 @@ function JiraGithub(){
         githubRepo = response.githubRepo;
     }
 
-    this.changeGithubPage = function(){
+    this.setIntervalChangeGithubPage = function(){
         setInterval(function() {
             if (window.location.href.indexOf('https://github.com/live-community/live_community/pull/') == 0){
-                this.changeGithubPage();
+                jiraGithub.changeGithubPage();
             }
         }, 3000);
 

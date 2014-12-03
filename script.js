@@ -73,18 +73,23 @@ function pluginCardsWatching(myName){
 }
 
 function pluginToggleStatus(){
-    $('#intu-help, #intu-filter-users').hide();
+    $('#intu-help, #intu-filter-users, #intu-filter-components').hide();
     $('#intu-status').toggle();
 }
 
 function pluginHelp(){
-    $('#intu-status, #intu-filter-users').hide();
+    $('#intu-status, #intu-filter-users, #intu-filter-components').hide();
     $('#intu-help').toggle();
 }
 
 function pluginShowUserFilter(){
-    $('#intu-status, #intu-help').hide();
+    $('#intu-status, #intu-help, #intu-filter-components').hide();
     $('#intu-filter-users').toggle();
+}
+
+function pluginShowComponentFilter(){
+    $('#intu-status, #intu-help, #intu-filter-users').hide();
+    $('#intu-filter-components').toggle();
 }
 
 function pluginCloseAll(){
@@ -101,7 +106,13 @@ function pluginFilterUser(name){
     $(".ghx-issue-compact[_displayName='" + name + "']").show();
 }
 
-function pluginClearUserFilter(){
+function pluginFilterComponent(name){
+    $('.ghx-issue, .ghx-issue-compact').hide();
+    $(".ghx-issue[_componentName*='|" + name + "']").show();
+    $(".ghx-issue-compact[_componentName*='|" + name + "']").show();
+}
+
+function pluginClearFilter(){
     $('.ghx-issue, .ghx-issue-compact').show();
 }
 

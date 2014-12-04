@@ -1,7 +1,7 @@
 window.sortAllJiraIssues = function(attr, order, valueType) {
-    $('.ghx-columns .ghx-column').each(function() {
+    $('.ghx-columns .ghx-column, .ghx-has-issues').each(function() {
         var mylist = $(this);
-        var listitems = mylist.find('.ghx-issue').get();
+        var listitems = mylist.find('.ghx-issue, .ghx-issue-compact').get();
         listitems.sort(function(a, b) {
             var compA;
             var compB;
@@ -70,6 +70,7 @@ function pluginToInt(str){
 
 function pluginCardsWatching(myName){
     $("div.ghx-issue").not("div.ghx-issue[_watchers*='" + myName + "']").toggle();
+    $("div.ghx-issue-compact").not("div.ghx-issue-compact[_watchers*='" + myName + "']").toggle();
 }
 
 function pluginToggleStatus(){

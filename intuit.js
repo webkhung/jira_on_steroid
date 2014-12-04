@@ -1,1 +1,1 @@
-var extraFields = ",customfield_11703,customfield_14107,customfield_13624,customfield_11712";
+var extraFields = ",customfield_11703,customfield_14107,customfield_13624";

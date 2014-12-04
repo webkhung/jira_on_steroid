@@ -2,8 +2,8 @@ var hostname = "https://" + window.location.hostname;
 var hoverDescription, showLastComment, relatedCards, fixVersion;
 var statusCounts = {New: 0, InProgress: 0, Blocked: 0, Verify: 0, Closed: 0, Deferred: 0};
 var statusStoryPoints = {New: 0, InProgress: 0, Blocked: 0, Verify: 0, Closed: 0, Deferred: 0};
-var workFields = "&maxResults=1000&fields=key,created,updated,status,summary,description,parent,labels,subtasks,assignee,issuelinks,fixVersions,comment,components" + extraFields;
-var planFields = "&maxResults=1000&fields=key,created,updated,status,summary,description,parent,labels,subtasks,assignee,issuelinks,fixVersions,comment,components";
+var workFields = "&maxResults=1000&fields=key,created,updated,status,summary,description,parent,labels,subtasks,assignee,issuelinks,fixVersions,comment,components,customfield_11712" + extraFields;
+var planFields = "&maxResults=1000&fields=key,created,updated,status,summary,description,parent,labels,subtasks,assignee,issuelinks,fixVersions,comment,components,customfield_11712";
 var planIssueQuery = " and issuetype in standardIssueTypes() and ((sprint is empty and resolutiondate is empty) or sprint in openSprints() or sprint in futureSprints())"
 var workIssueQuery = " and (sprint in openSprints())";
 var jiraGithub = new JiraGithub();

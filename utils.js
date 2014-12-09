@@ -120,3 +120,14 @@ function callJiraForIssues(url){
             updateLoadStatus('Error calling JIRA search api"', true);
         });
 }
+
+function WorkStatus(id, name, columnId){
+    this.statusId = id;
+    this.name = name;
+    this.columnId = columnId;
+    this.count = 0;
+
+    this.increment = function(){
+        this.count++;
+    }
+}

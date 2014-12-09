@@ -7,17 +7,20 @@ var planFields = "&maxResults=1000&fields=key,created,updated,status,summary,des
 var planIssueQuery = " and issuetype in standardIssueTypes() and ((sprint is empty and resolutiondate is empty) or sprint in openSprints() or sprint in futureSprints())"
 var workIssueQuery = " and (sprint in openSprints())";
 var jiraGithub = new JiraGithub();
+var localStorageSet = false;
+var workColumnStatuses = {}
 
 if(window.location.href.indexOf('RapidBoard') > 0) {
+    setupDocument();
+
     chrome.runtime.sendMessage({method: "getLocalStorage", key: "settings"}, function(response) {
+        localStorageSet = true;
         jiraGithub.initVariables(response);
         watchersNames = response.watchersNames;
         hoverDescription = response.hoverDescription == 'true';
         showLastComment = response.lastComment == 'true';
         relatedCards = response.relatedCards == 'true';
         fixVersion = response.fixVersion == 'true';
-
-        setupDocument();
     });
 
     // go will be an event sent from the document when call window.go()
@@ -72,9 +75,18 @@ function setupDocument(){
 }
 
 function loadPlugin(){
-    console.log('---loadPlugin');
-    jiraGithub.getGithubIssues();
-    updateJiraBoard();
+    console.log('--- loadPlugin');
+    if(localStorageSet){
+        console.log('--- really loadPlugin');
+        jiraGithub.getGithubIssues();
+        updateJiraBoard();
+    }
+    else {
+        console.log('--- waiting');
+        setTimeout(function(){
+            loadPlugin();
+        }, 2000);
+    }
 }
 
 function setupClientLoadPluginEvent() {
@@ -116,7 +128,7 @@ function setupClientLoadPluginEvent() {
 }
 
 function processIssues(data){
-    console.log('---processIssues');
+    console.log('--- processIssues');
     updateLoadStatus('Received ' + data.issues.length + ' issues details');
 
     $('.ghx-summary').removeAttr('title'); // Dont like their <a> title so remove it.
@@ -130,11 +142,19 @@ function processIssues(data){
 
         var issueIsPR = jiraGithub.addPullRequestLabel(issue.key, elIssue);
 
+//        workColumnStatuses[fields.status.id].increment();
+
         addLabelTo(elIssue, createLabelFrom(fields.labels, issueIsPR, elIssue), 'top-right');
         addAttributesTo(elIssue, fields, issueIsPR);
         addOpenIssueLinkTo(elIssue, issue.key);
         addWatchersTo(elIssue, fields.assignee, fields.customfield_11712, watchersNames);
     });
+
+//    for (var key in workColumnStatuses) {
+//        console.log(workColumnStatuses[key]);
+//        var wc = workColumnStatuses[key];
+//        $(".ghx-column[data-id='" + wc.columnId + "']").append("<div>" + wc.name + ":" + wc.count + "</div>");
+//    }
 
     setIssueStatus(statusCounts, statusStoryPoints);
 }
@@ -156,11 +176,18 @@ function updateJiraBoard() {
         callJiraForIssues(hostname + "/rest/api/latest/search?jql=sprint%3D" + sprintID + searchFields());
     }
     else {
-//        $('#intu-side-menu').toggle(!planView);
         var query = (planView? planIssueQuery : workIssueQuery);
         if(localStorage["jis" + rapidViewID] === undefined){
             $.get(hostname + "/rest/greenhopper/1.0/rapidviewconfig/editmodel.json?rapidViewId=" + rapidViewID, function( data ) {
                 localStorage["jis" + data.id] = data.filterConfig.id;
+
+//                data.rapidListConfig.mappedColumns.forEach(function(mappedColumn) {
+//                    mappedColumn.mappedStatuses.forEach(function(mappedStatus){
+//                        var workStatus = new WorkStatus(mappedStatus.id, mappedStatus.name, mappedColumn.id);
+//                        workColumnStatuses[mappedStatus.id] = workStatus;
+//                    });
+//                });
+
                 callJiraForIssues(hostname + "/rest/api/latest/search?jql=filter=" + data.filterConfig.id + query + searchFields());
             });
         }

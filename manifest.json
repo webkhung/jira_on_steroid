@@ -1,7 +1,7 @@
 {
   "name": "JIRA on Steroid",
   "description": "",
-  "version": "4.9.1",
+  "version": "4.9.2",
   "icons": { "16": "images/jira16.png",
               "48": "images/jira48.png",
               "128": "images/jira128.png" },

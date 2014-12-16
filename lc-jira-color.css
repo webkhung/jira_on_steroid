@@ -98,6 +98,8 @@
 
 .intu-filter-user, .intu-filter-component { padding: 0 5px; }
 
+.intu-filter-new-user { color: rgb(239, 4, 255) !important; }
+
 .intu-container {
     background-color: #fff;
     padding: 5px;
@@ -141,7 +143,19 @@
     color:#fff;
     font-size:12px;
     right: 33px;
- }
+}
+
+.columnStatus {
+    position: absolute;
+    bottom: 0px;
+    left: 0px;
+    font-size: 11px;
+    color: #528592;
+}
+
+.columnStatus span {
+    margin-right: 7px;
+}
 
 /*http://time2hack.com/2013/03/jquery-tutorial-build-hovercards-for-your-website.html*/
 .hovercard {

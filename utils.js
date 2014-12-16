@@ -72,6 +72,17 @@ function resetIssue(elIssue){
 }
 
 // HTML stuffs
+function addUserFilter(displayName){
+    if($(".intu-filter-user[_displayName='" + displayName.replace(/'/g, "\\'") + "']").length == 0){
+        var linkUser = $('<a />').attr({
+            class: (displayName == 'Unassigned'? 'intu-filter-user intu-filter-new-user' : 'intu-filter-user'),
+            href: "javascript:pluginFilterUser('" + displayName + "')",
+            _displayName: displayName.replace(/'/g, "\\'")
+        }).text(displayName);
+        $('#intu-filter-users').append(linkUser);
+    }
+}
+
 function issueLinkJsHtml(issueKey, cssClass){
     var anchor = $('<a />').attr({
         href: "javascript:void(0);",
@@ -121,8 +132,7 @@ function callJiraForIssues(url){
         });
 }
 
-function WorkStatus(id, name, columnId){
-    this.statusId = id;
+function WorkStatus(name, columnId){
     this.name = name;
     this.columnId = columnId;
     this.count = 0;

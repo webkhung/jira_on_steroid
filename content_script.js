@@ -132,29 +132,35 @@ function processIssues(data){
     updateLoadStatus('Received ' + data.issues.length + ' issues details');
 
     $('.ghx-summary').removeAttr('title'); // Dont like their <a> title so remove it.
+    $('.columnStatus').remove();
 
+    console.log('----- processing' + data.issues.length);
     data.issues.forEach(function(issue) {
         var elIssue = $("div[data-issue-key='" + issue.key + "'].ghx-issue, div[data-issue-key='" + issue.key + "'].ghx-issue-compact").first();
         if (elIssue.length == 0) return; // in case the card doesn't exist on the UI
         var fields = issue.fields;
+
+        workColumnStatuses[parseInt(fields.status.id)].increment();
+
         resetIssue(elIssue);
-        addHovercardTo(elIssue, fields, issue.key);
-
         var issueIsPR = jiraGithub.addPullRequestLabel(issue.key, elIssue);
-
-//        workColumnStatuses[fields.status.id].increment();
-
+        addHovercardTo(elIssue, fields, issue.key);
+        addUserFilter('Unassigned');
         addLabelTo(elIssue, createLabelFrom(fields.labels, issueIsPR, elIssue), 'top-right');
         addAttributesTo(elIssue, fields, issueIsPR);
         addOpenIssueLinkTo(elIssue, issue.key);
         addWatchersTo(elIssue, fields.assignee, fields.customfield_11712, watchersNames);
     });
 
-//    for (var key in workColumnStatuses) {
-//        console.log(workColumnStatuses[key]);
-//        var wc = workColumnStatuses[key];
-//        $(".ghx-column[data-id='" + wc.columnId + "']").append("<div>" + wc.name + ":" + wc.count + "</div>");
-//    }
+    for(var key in workColumnStatuses) {
+        console.log(workColumnStatuses[key]);
+        var wc = workColumnStatuses[key];
+
+        if($(".columnStatus[data-id='" + wc.columnId + "']").length == 0) {
+            $(".ghx-column[data-id='" + wc.columnId + "']").append("<div class='columnStatus' data-id='" + wc.columnId + "'></div>");
+        }
+        $(".columnStatus[data-id='" + wc.columnId + "']").append("<span>" + wc.name + ":" + wc.count + "</span>");
+    }
 
     setIssueStatus(statusCounts, statusStoryPoints);
 }
@@ -167,34 +173,61 @@ function updateJiraBoard() {
 
     var sprintID = param('sprint');
     var rapidViewID = param('rapidView');
-    var planView = isPlanView();
 
     if (sprintID.length == 0 && rapidViewID.length == 0) {
         updateLoadStatus('Not a RapidBoard Url');
     }
-    else if (sprintID !== undefined && sprintID != '') {
-        callJiraForIssues(hostname + "/rest/api/latest/search?jql=sprint%3D" + sprintID + searchFields());
-    }
     else {
-        var query = (planView? planIssueQuery : workIssueQuery);
-        if(localStorage["jis" + rapidViewID] === undefined){
+        if(localStorage["JIS" + rapidViewID] === undefined) {
             $.get(hostname + "/rest/greenhopper/1.0/rapidviewconfig/editmodel.json?rapidViewId=" + rapidViewID, function( data ) {
-                localStorage["jis" + data.id] = data.filterConfig.id;
+                workColumnStatuses = {};
+                data.rapidListConfig.mappedColumns.forEach(function(mappedColumn) {
+                    mappedColumn.mappedStatuses.forEach(function(mappedStatus){
+                        var workStatus = new WorkStatus(mappedStatus.name, mappedColumn.id);
+                        workColumnStatuses[mappedStatus.id] = workStatus;
+                    });
+                });
 
-//                data.rapidListConfig.mappedColumns.forEach(function(mappedColumn) {
-//                    mappedColumn.mappedStatuses.forEach(function(mappedStatus){
-//                        var workStatus = new WorkStatus(mappedStatus.id, mappedStatus.name, mappedColumn.id);
-//                        workColumnStatuses[mappedStatus.id] = workStatus;
-//                    });
-//                });
+                localStorage["JIS" + data.id] = data.filterConfig.id;
+                localStorage["JIS_ColumnStatuses" + rapidViewID] = workColumnStatusesToString();
 
-                callJiraForIssues(hostname + "/rest/api/latest/search?jql=filter=" + data.filterConfig.id + query + searchFields());
+                callJira(sprintID, data.filterConfig.id);
             });
         }
         else {
-            callJiraForIssues(hostname + "/rest/api/latest/search?jql=filter=" + localStorage["jis" + rapidViewID] + query + searchFields());
+            var filterId = localStorage["JIS" + rapidViewID];
+            workColumnStatusesStringToHash(localStorage["JIS_ColumnStatuses" + rapidViewID]);
+            callJira(sprintID, filterId);
         }
     }
+}
+
+function callJira(sprintID, filterId){
+    if (sprintID !== undefined && sprintID != '') {
+        callJiraForIssues(hostname + "/rest/api/latest/search?jql=sprint%3D" + sprintID + searchFields());
+    }
+    else {
+        var query = (isPlanView()? planIssueQuery : workIssueQuery);
+        callJiraForIssues(hostname + "/rest/api/latest/search?jql=filter=" + filterId + query + searchFields());
+    }
+}
+
+function workColumnStatusesToString(){
+    var hashString = '';
+    for(var key in workColumnStatuses) {
+        var wc = workColumnStatuses[key];
+        hashString += key + '=' + wc.name + "%" + wc.columnId + ';';
+    }
+    return hashString;
+}
+
+function workColumnStatusesStringToHash(hashString){
+    var pieces = hashString.split(';');
+    pieces.forEach(function(piece){
+        var p = piece.split('=');
+        if(p == '') return;
+        workColumnStatuses[p[0]] = new WorkStatus(p[1].split('%')[0], p[1].split('%')[1]);
+    });
 }
 
 function searchFields(){
@@ -206,15 +239,8 @@ function searchFields(){
 
 function addPluginMenu(){
     $('#intu-menu').html("<span id='intu-menu-load'></span><span id='intu-menu-error'></span>");
-    // <a href='javascript:window.go();'>Click me</a>
-
-//    if(isPlanView()){
-//        return;
-//    }
-
     $('#intu-side-menu').remove();
     $('body').append("<div id='intu-side-menu'></div>");
-
     $('#intu-side-menu').append("<a href='javascript:pluginMaxSpace();' title='Maximize Space' class='masterTooltip'><img width=16 height=16 src=" + chrome.extension.getURL('images/max.png') + "></a>");
     $('#intu-side-menu').append("<a href='javascript:pluginCardsWatching(\"" + myName() + "\");' title='Show cards I am watching' class='masterTooltip'><img width=16 height=16 src=" + chrome.extension.getURL('images/watching.png') + "></a>");
 
@@ -287,7 +313,7 @@ function addAttributesTo(elIssue, fields, issueIsPR){
     var storyPoint = 0;
     if (fields.customfield_11703) storyPoint = fields.customfield_11703;
 
-    var displayName = '';
+    var displayName = 'Unassigned';
     if (fields.assignee) displayName = fields.assignee.displayName;
 
     var label = "";
@@ -318,14 +344,7 @@ function addAttributesTo(elIssue, fields, issueIsPR){
     elIssue.attr('_watchers', watchers);
 
     // Add name filter
-    if(displayName.length > 0 && $(".intu-filter-user[_displayName='" + displayName.replace(/'/g, "\\'") + "']").length == 0){
-        var linkUser = $('<a />').attr({
-            class: 'intu-filter-user',
-            href: "javascript:pluginFilterUser('" + displayName + "')",
-            _displayName: displayName.replace(/'/g, "\\'")
-        }).text(displayName);
-        $('#intu-filter-users').append(linkUser);
-    }
+    addUserFilter(displayName);
 
     if(fields.components){
         for(var i=0; i<fields.components.length; i++){

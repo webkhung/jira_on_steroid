@@ -46,7 +46,7 @@
     padding: 7px 4px;
     border: 1px solid #333;
     position: absolute;
-    top: 250px;
+    top: 265px;
     right: 10px;
     background-color: #FFD738;
     z-index: 1;
@@ -56,7 +56,7 @@
 
 #intu-side-menu > a {
     display: block;
-    margin: 3px 0;
+    margin: 5px 0;
 }
 
 #intu-menu {
@@ -92,9 +92,10 @@
     text-align: left;
 }
 
-#intu-menu-toggle {
-    font-weight: bold;
-}
+#num-of-issues { color: #5ba0ff; }
+#num-of-points { color: #eda400; }
+
+#intu-menu-toggle { font-weight: bold; }
 
 .intu-filter-user, .intu-filter-component { padding: 0 5px; }
 
@@ -148,7 +149,7 @@
 .columnStatus {
     position: absolute;
     bottom: 0px;
-    left: 0px;
+    right: 0px;
     font-size: 11px;
     color: #528592;
 }

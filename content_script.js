@@ -134,6 +134,10 @@ function processIssues(data){
     $('.ghx-summary').removeAttr('title'); // Dont like their <a> title so remove it.
     $('.columnStatus').remove();
 
+    for(var key in workColumnStatuses) {
+        workColumnStatuses[key].count = 0;
+    }
+
     console.log('----- processing' + data.issues.length);
     data.issues.forEach(function(issue) {
         var elIssue = $("div[data-issue-key='" + issue.key + "'].ghx-issue, div[data-issue-key='" + issue.key + "'].ghx-issue-compact").first();
@@ -153,9 +157,7 @@ function processIssues(data){
     });
 
     for(var key in workColumnStatuses) {
-        console.log(workColumnStatuses[key]);
         var wc = workColumnStatuses[key];
-
         if($(".columnStatus[data-id='" + wc.columnId + "']").length == 0) {
             $(".ghx-column[data-id='" + wc.columnId + "']").append("<div class='columnStatus' data-id='" + wc.columnId + "'></div>");
         }
@@ -178,9 +180,9 @@ function updateJiraBoard() {
         updateLoadStatus('Not a RapidBoard Url');
     }
     else {
+        workColumnStatuses = {};
         if(localStorage["JIS" + rapidViewID] === undefined) {
             $.get(hostname + "/rest/greenhopper/1.0/rapidviewconfig/editmodel.json?rapidViewId=" + rapidViewID, function( data ) {
-                workColumnStatuses = {};
                 data.rapidListConfig.mappedColumns.forEach(function(mappedColumn) {
                     mappedColumn.mappedStatuses.forEach(function(mappedStatus){
                         var workStatus = new WorkStatus(mappedStatus.name, mappedColumn.id);
@@ -204,12 +206,21 @@ function updateJiraBoard() {
 
 function callJira(sprintID, filterId){
     if (sprintID !== undefined && sprintID != '') {
-        callJiraForIssues(hostname + "/rest/api/latest/search?jql=sprint%3D" + sprintID + searchFields());
+        makeApiRequest(hostname + "/rest/api/latest/search?jql=sprint%3D" + sprintID + searchFields());
     }
     else {
         var query = (isPlanView()? planIssueQuery : workIssueQuery);
-        callJiraForIssues(hostname + "/rest/api/latest/search?jql=filter=" + filterId + query + searchFields());
+        makeApiRequest(hostname + "/rest/api/latest/search?jql=filter=" + filterId + query + searchFields());
     }
+}
+
+function makeApiRequest(url){
+    console.log('--- makeApiRequest' + url)
+    updateLoadStatus('Calling JIRA API for issues details');
+    $.get(url, processIssues, "json")
+        .fail(function() {
+            updateLoadStatus('Error calling JIRA search api"', true);
+        });
 }
 
 function workColumnStatusesToString(){
@@ -269,8 +280,8 @@ function addPluginMenu(){
         <div id='intu-filter-components' class='intu-container'><strong>Filter By Component:</strong> <a href='javascript:pluginClearFilter()' style='color:red'>Clear Filter</a> </div> \
         <div id='intu-filter-users' class='intu-container'><strong>Filter By Assignee:</strong> <a href='javascript:pluginClearFilter()' style='color:red'>Clear Filter</a> </div> \
         <div id='intu-status'>  \
-            <div><strong># of Issues : </strong><span id='intu-status-issues'></span></div>  \
-            <div><strong># of Story Pts : </strong><span id='intu-status-points'></span></div>  \
+            <div id='num-of-issues'><strong># of Issues : </strong><span id='intu-status-issues'></span></div>  \
+            <div id='num-of-points'><strong># of Story Pts : </strong><span id='intu-status-points'></span></div>  \
         </div>  \
         <div id='intu-help'>  \
             <strong>For configurable settings, go to the <a href='chrome-extension://allgccigpmbiidjamamjhhcpbclmdgln/options.html' target='_blank'>options</a> page. \
@@ -382,7 +393,8 @@ function createLabelFrom(labels, issueIsPR, elIssue){
     }
 
     if (displayLabel.length > 0) {
-        elIssue.css('background-color', 'rgba('+ hexToRgb(stringToColour(displayLabel)) + ',0.2)');
+        elIssue.css('background-color', 'rgba('+ hexToRgb(shadeColor(stringToColour(displayLabel), 20)) + ',0.35)');
+//        elIssue.css('background-color', 'rgba('+ hexToRgb(stringToColour(displayLabel)) + ',0.2)');
         $('#sortLabel').css('display', 'block');
     }
 
@@ -417,8 +429,8 @@ function addOpenIssueLinkTo(elIssue, issueKey){
     if (elIssue.hasClass('ghx-issue-compact')) return
     var img = $('<img />').attr({
         src: chrome.extension.getURL("images/open.png"),
-        width:'16',
-        height:'15'
+        width:'14',
+        height:'13'
     })
     elIssue.find('.ghx-key').append(issueLinkJsHtml(issueKey, 'open-icon').append(img));
 }

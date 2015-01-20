@@ -1,14 +1,15 @@
 var hostname = "https://" + window.location.hostname;
 var hoverDescription, showLastComment, relatedCards, fixVersion;
-var statusCounts = {New: 0, InProgress: 0, Blocked: 0, Verify: 0, Closed: 0, Deferred: 0};
-var statusStoryPoints = {New: 0, InProgress: 0, Blocked: 0, Verify: 0, Closed: 0, Deferred: 0};
-var workFields = "&maxResults=1000&fields=key,created,updated,status,summary,description,parent,labels,subtasks,assignee,issuelinks,fixVersions,comment,components,customfield_11712" + extraFields;
-var planFields = "&maxResults=1000&fields=key,created,updated,status,summary,description,parent,labels,subtasks,assignee,issuelinks,fixVersions,comment,components,customfield_11712";
+var statusCounts = {};
+var statusStoryPoints = {};
+var workFields = "&maxResults=1000&fields=key,created,updated,status,summary,description,parent,labels,subtasks,assignee,issuelinks,fixVersions,comment,components," + storyPointsField + extraFields;
+var planFields = "&maxResults=1000&fields=key,created,updated,status,summary,description,parent,labels,subtasks,assignee,issuelinks,fixVersions,comment,components" + planExtraFields;
 var planIssueQuery = " and issuetype in standardIssueTypes() and ((sprint is empty and resolutiondate is empty) or sprint in openSprints() or sprint in futureSprints())"
 var workIssueQuery = " and (sprint in openSprints())";
 var jiraGithub = new JiraGithub();
 var localStorageSet = false;
 var workColumnStatuses = {}
+var setTimeoutLoadPlugin;
 
 if(window.location.href.indexOf('RapidBoard') > 0) {
     setupDocument();
@@ -31,6 +32,11 @@ if(window.location.href.indexOf('RapidBoard') > 0) {
     document.addEventListener("loadPlugin", function(data) {
         loadPlugin();
     });
+
+    setTimeoutLoadPlugin = setTimeout(function(){
+        console.log('--- setTimeout');
+        loadPlugin();
+    }, 4000);
 }
 else {
     jiraGithub.setIntervalChangeGithubPage();
@@ -63,6 +69,7 @@ function setupDocument(){
         s.parentNode.removeChild(s);
     };
 
+
     // Hide buttons / filters on the board are clicked.
     $('#work-toggle, #plan-toggle').on('click', function(){
         $('#intu-status-issues').html('');
@@ -75,14 +82,14 @@ function setupDocument(){
 }
 
 function loadPlugin(){
+    clearTimeout(setTimeoutLoadPlugin);
+
     console.log('--- loadPlugin');
     if(localStorageSet){
-        console.log('--- really loadPlugin');
         jiraGithub.getGithubIssues();
         updateJiraBoard();
     }
     else {
-        console.log('--- waiting');
         setTimeout(function(){
             loadPlugin();
         }, 2000);
@@ -90,6 +97,8 @@ function loadPlugin(){
 }
 
 function setupClientLoadPluginEvent() {
+    console.log('--- setupClientLoadPluginEvent');
+
     // Allow document to call window.go()
     window.go = function() {
         var event = document.createEvent('Event');
@@ -111,10 +120,19 @@ function setupClientLoadPluginEvent() {
     setTimeout(function(){
         $('#ghx-pool').on('click', '.issueLink', function(e){
             var issueKey = $(this).parents('.ghx-issue').data('issue-key');
-            window.open('https://jira.intuit.com/browse/' + issueKey);
+            window.open("https://" + window.location.hostname + '/browse/' + issueKey);
             e.stopPropagation();
         });
-    }, 3000);
+
+        $('#work-toggle, #plan-toggle').on('click', function(){
+            hidingHeight = 0;
+            $('#announcement-banner, #header, #ghx-operations').show();
+        });
+
+        $(window).resize(function() {
+            setTimeout(function(){pluginAdjustSpace()}, 1000);
+        });
+    }, 4000);
 
     console.yo = console.log;
     console.log = function(str){
@@ -138,7 +156,7 @@ function processIssues(data){
         workColumnStatuses[key].count = 0;
     }
 
-    console.log('----- processing' + data.issues.length);
+    console.log('--- processing data size ' + data.issues.length);
     data.issues.forEach(function(issue) {
         var elIssue = $("div[data-issue-key='" + issue.key + "'].ghx-issue, div[data-issue-key='" + issue.key + "'].ghx-issue-compact").first();
         if (elIssue.length == 0) return; // in case the card doesn't exist on the UI
@@ -153,7 +171,10 @@ function processIssues(data){
         addLabelTo(elIssue, createLabelFrom(fields.labels, issueIsPR, elIssue), 'top-right');
         addAttributesTo(elIssue, fields, issueIsPR);
         addOpenIssueLinkTo(elIssue, issue.key);
-        addWatchersTo(elIssue, fields.assignee, fields.customfield_11712, watchersNames);
+
+        if(fields.customfield_11712){
+            addWatchersTo(elIssue, fields.assignee, fields.customfield_11712, watchersNames);
+        }
     });
 
     for(var key in workColumnStatuses) {
@@ -253,7 +274,9 @@ function addPluginMenu(){
     $('#intu-side-menu').remove();
     $('body').append("<div id='intu-side-menu'></div>");
     $('#intu-side-menu').append("<a href='javascript:pluginMaxSpace();' title='Maximize Space' class='masterTooltip'><img width=16 height=16 src=" + chrome.extension.getURL('images/max.png') + "></a>");
-    $('#intu-side-menu').append("<a href='javascript:pluginCardsWatching(\"" + myName() + "\");' title='Show cards I am watching' class='masterTooltip'><img width=16 height=16 src=" + chrome.extension.getURL('images/watching.png') + "></a>");
+
+    if(extraFields.indexOf('customfield_11712')>=0)
+        $('#intu-side-menu').append("<a href='javascript:pluginCardsWatching(\"" + myName() + "\");' title='Show cards I am watching' class='masterTooltip'><img width=16 height=16 src=" + chrome.extension.getURL('images/watching.png') + "></a>");
 
     var sorts = {
         label:        { id: 'sortLabel', image: "images/label.png", title: "Sort by labels", attr: "_label", order: "desc", valueType: "string" },
@@ -270,10 +293,10 @@ function addPluginMenu(){
         <a href='javascript:pluginShowComponentFilter();' id='componentFilter' title='Component Filters' class='masterTooltip'><img width=16 height=16 src=" + chrome.extension.getURL('images/component.png') + "></a>  \
         <a href='javascript:pluginShowUserFilter();' id='userFilter' title='User Filters' class='masterTooltip'><img width=16 height=16 src=" + chrome.extension.getURL('images/users.png') + "></a>  \
         <a href='javascript:pluginToggleStatus();' title='Issue Status' class='masterTooltip'><img width=16 height=16 src=" + chrome.extension.getURL('images/status.png') + "></a>  \
-        <a href='javascript:pluginHelp();' title='Help' class='masterTooltip'><img width=16 height=16 src=" + chrome.extension.getURL('images/info.png') + "></a>  \
         <a id='pluginMentionCount' href='javascript:pluginMention();' title='You are mentioned' class='masterTooltip'></a>\
         "
     );
+//    <a href='javascript:pluginHelp();' title='Options' class='masterTooltip'><img width=16 height=16 src=" + chrome.extension.getURL('images/info.png') + "></a>  \
 
     $('#intu-side-menu').append("<div id='intu-mention'></div>")
     $('#intu-side-menu').append("\
@@ -283,11 +306,12 @@ function addPluginMenu(){
             <div id='num-of-issues'><strong># of Issues : </strong><span id='intu-status-issues'></span></div>  \
             <div id='num-of-points'><strong># of Story Pts : </strong><span id='intu-status-points'></span></div>  \
         </div>  \
-        <div id='intu-help'>  \
-            <strong>For configurable settings, go to the <a href='chrome-extension://allgccigpmbiidjamamjhhcpbclmdgln/options.html' target='_blank'>options</a> page. \
-        </div> \
         "
     );
+
+//    <div id='intu-help'>  \
+//        <strong>For configurable settings, go to the <a href='" + chrome.extension.getURL(optionsPage) + "' target='_blank'>options</a> page. \
+//        </div> \
 
     $('.masterTooltip').hover(function(){
         var title = $(this).attr('title');
@@ -322,7 +346,7 @@ function setIssueStatus(statusCounts, statusStoryPoints) {
 
 function addAttributesTo(elIssue, fields, issueIsPR){
     var storyPoint = 0;
-    if (fields.customfield_11703) storyPoint = fields.customfield_11703;
+    if (fields[storyPointsField]) storyPoint = fields[[storyPointsField]];
 
     var displayName = 'Unassigned';
     if (fields.assignee) displayName = fields.assignee.displayName;
@@ -344,7 +368,6 @@ function addAttributesTo(elIssue, fields, issueIsPR){
     if(fields.customfield_11712) {
         for(var i=0; i < fields.customfield_11712.length; i++){
             var watcherName = fields.customfield_11712[i].name;
-            var watcherDisplayName = fields.customfield_11712[i].displayName;
             watchers += (watcherName + ",");
         }
     }
@@ -525,7 +548,7 @@ function addHovercardTo(elIssue, fields, issueKey){
     var fixVersionHtml = "";
     if(fields.fixVersions && fields.fixVersions.length > 0){
         fixVersions = fields.fixVersions[0];
-        fixVersionHtml = "<h3>Fix Version</h3>" + fixVersions.name + " - " + fixVersions.description;
+        fixVersionHtml = "<h3>Fix Version</h3>" + fixVersions.name;
     }
 
     addLabelTo(elIssue, blocking + blockedBy, 'top-left');
@@ -543,12 +566,12 @@ function addHovercardTo(elIssue, fields, issueKey){
     }
 
     // Status count
-    statusCounts[fields.status.name.replace(' ', '')] = statusCounts[fields.status.name.replace(' ', '')] + 1;
+    if(statusCounts[fields.status.name] === undefined) statusCounts[fields.status.name] = 0;
+    statusCounts[fields.status.name] = statusCounts[fields.status.name] + 1;
 
-    var storyPoint = 0;
-    if (fields.customfield_11703) {
-        statusStoryPoints[fields.status.name.replace(' ', '')] = statusStoryPoints[fields.status.name.replace(' ', '')] + fields.customfield_11703;
-    }
+    // StoryPoint
+    if(statusStoryPoints[fields.status.name] === undefined) statusStoryPoints[fields.status.name] = 0;
+    if(fields[storyPointsField]) statusStoryPoints[fields.status.name] = statusStoryPoints[fields.status.name] + fields[storyPointsField];
 
     // This is on Plan view. Add summary
     var summaryHtml = '';
@@ -565,7 +588,7 @@ function addHovercardTo(elIssue, fields, issueKey){
     elIssue.find('.ghx-issue-fields:first, .ghx-key').first().hovercard({
         detailsHTML:
             "<h3 style='float:left;padding-top:0px;'>Status</h3>" +
-                "<div style='float:right'>Created: " + (new Date(fields.created)).toLocaleDateString() + " Updated: " + (new Date(fields.updated)).toLocaleDateString() +
+                "<div style='float:right'><b>Created</b>: " + daysDiff(new Date(fields.created), new Date()) + ' days ago ' + " <b>Updated:</b> "+ daysDiff(new Date(fields.updated), new Date()) + ' days ago' + /*(new Date(fields.updated)).toLocaleDateString()*/
                 "</div><div style='clear:both'></div>" +
                 fields.status.name +
                 (fixVersion ? fixVersionHtml : "")+

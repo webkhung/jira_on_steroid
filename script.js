@@ -74,30 +74,27 @@ function pluginCardsWatching(myName){
 }
 
 function pluginToggleStatus(){
-    $('#intu-help, #intu-filter-users, #intu-filter-components').hide();
+    $('#intu-help, #intu-filter-users, #intu-filter-components, #intu-mention').hide();
     $('#intu-status').toggle();
 }
 
 function pluginHelp(){
-    $('#intu-status, #intu-filter-users, #intu-filter-components').hide();
+    $('#intu-status, #intu-filter-users, #intu-filter-components, #intu-mention').hide();
     $('#intu-help').toggle();
 }
 
 function pluginShowUserFilter(){
-    $('#intu-status, #intu-help, #intu-filter-components').hide();
+    $('#intu-status, #intu-help, #intu-filter-components, #intu-mention').hide();
     $('#intu-filter-users').toggle();
 }
 
 function pluginShowComponentFilter(){
-    $('#intu-status, #intu-help, #intu-filter-users').hide();
+    $('#intu-status, #intu-help, #intu-filter-users, #intu-mention').hide();
     $('#intu-filter-components').toggle();
 }
 
-function pluginCloseAll(){
-    $('#intu-status, #intu-help, #intu-filter-users').hide();
-}
-
 function pluginMention(){
+    $('#intu-status, #intu-help, #intu-filter-users, #intu-filter-components').hide();
     $('#intu-mention').toggle();
 }
 
@@ -116,12 +113,3 @@ function pluginFilterComponent(name){
 function pluginClearFilter(){
     $('.ghx-issue, .ghx-issue-compact').show();
 }
-
-$('#work-toggle, #plan-toggle').on('click', function(){
-    hidingHeight = 0;
-    $('#announcement-banner, #header, #ghx-operations').show();
-});
-
-$(window).resize(function() {
-    setTimeout(function(){pluginAdjustSpace()}, 1000);
-});

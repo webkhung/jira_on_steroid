@@ -1,7 +1,5 @@
 {
-  "name": "JIRA on Steroid",
   "description": "",
-  "version": "5.0.0",
   "icons": { "16": "images/jira16.png",
               "48": "images/jira48.png",
               "128": "images/jira128.png" },
@@ -12,14 +10,21 @@
     "scripts": ["background.js"],
     "persistent": false
   },
-  "options_page": "options.html",
-  "content_scripts": [
-    {
-      "matches": ["https://jira.intuit.com/secure/RapidBoard.jspa*", "https://github.com/live-community/live_community/pull*"],
-      "css": ["lc-jira-color.css"],
-      "js": ["lib/base64.js", "lib/underscore-min.js", "github.js", "jquery.js", "utils.js", "jira_github.js", "intuit.js", "content_script.js"]
-    }
-  ],
+
+
+
+    "name": "JIRA on Steroid",
+    "version": "5.0.1",
+    "options_page": "options.html",
+    "content_scripts": [
+        {
+            "matches": ["https://jira.intuit.com/secure/RapidBoard.jspa*", "https://github.com/live-community/live_community/pull*"],
+            "css": ["lc-jira-color.css"],
+            "js": ["lib/base64.js", "lib/underscore-min.js", "github.js", "jquery.js", "utils.js", "jira_github.js", "intuit.js", "content_script.js"]
+        }
+    ],
+
+
   "web_accessible_resources": [
       "images/web.png",
       "images/web2.png",

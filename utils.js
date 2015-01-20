@@ -71,7 +71,6 @@ function shortenName(name){
 }
 
 function myName(){
-//    return 'wbartolome';
     return $('input[title=loggedInUser]').attr('value');
 }
 
@@ -80,8 +79,8 @@ function isPlanView(){
 }
 
 function resetIssueStatus(){
-    statusCounts = {New: 0, InProgress: 0, Blocked: 0, Verify: 0, Closed: 0, Deferred: 0, Resolved: 0};
-    statusStoryPoints = {New: 0, InProgress: 0, Blocked: 0, Verify: 0, Closed: 0, Deferred: 0, Resolved: 0};
+    statusCounts = {};
+    statusStoryPoints = {};
 }
 
 function resetIssue(elIssue){
@@ -113,7 +112,7 @@ function issueLinkJsHtml(issueKey, cssClass){
 
 function issueLinkHtml(issueKey, cssClass){
     var anchor = $('<a />').attr({
-        href: "https://jira.intuit.com/browse/" + issueKey,
+        href: "https://" + window.location.hostname + "/browse/" + issueKey,
         target: "_blank",
         class: cssClass
     });
@@ -121,7 +120,9 @@ function issueLinkHtml(issueKey, cssClass){
 }
 
 function commentDisplayHtml(comment){
-    return comment.body + " (" + comment.author.displayName + " on " + (new Date(comment.updated)).toLocaleString() + ")<br>";
+    var body = comment.body;
+    body = body.replace('[~', '').replace(']', '');
+    return body + " (" + comment.author.displayName + " on " + (new Date(comment.updated)).toLocaleString() + ")<br>";
 }
 
 function mentionHtml(issueKey, lastComment, summary){
@@ -129,8 +130,8 @@ function mentionHtml(issueKey, lastComment, summary){
     var mentions = $('<p>' + lastComment.body + '</p>').find('a.user-hover');
     for(var iMnt=0; iMnt < mentions.length; iMnt++){
         if(name == $(mentions[iMnt]).attr('rel')){
-            $('#intu-mention').append(issueLinkJsHtml(issueKey, 'mention').text(issueKey));
-            $('#intu-mention').append(' ' + summary)
+            $('#intu-mention').append(issueLinkHtml(issueKey, 'mention').text(issueKey));
+            $('#intu-mention').append(' ' + summary);
             $('#intu-mention').append($(commentDisplayHtml(lastComment)));
             $('#intu-mention').append('<br>');
 
@@ -139,6 +140,19 @@ function mentionHtml(issueKey, lastComment, summary){
             var nextCount = parseInt(mCount) + 1;
             $('#pluginMentionCount').text(nextCount)
         }
+    }
+
+    if(lastComment.body.indexOf('[~' + name + ']') >= 0)
+    {
+        $('#intu-mention').append(issueLinkHtml(issueKey, 'mention').text(issueKey));
+        $('#intu-mention').append(' ' + summary + '<br>');
+        $('#intu-mention').append(commentDisplayHtml(lastComment));
+        $('#intu-mention').append('<br>');
+
+        var mCount = $('#pluginMentionCount').text();
+        if(mCount == '') mCount = '0';
+        var nextCount = parseInt(mCount) + 1;
+        $('#pluginMentionCount').text(nextCount)
     }
 }
 
@@ -150,4 +164,10 @@ function WorkStatus(name, columnId){
     this.increment = function(){
         this.count++;
     }
+}
+
+function daysDiff(older, newer){
+    var timeDiff = Math.abs(newer.getTime() - older.getTime());
+    var diffDays = Math.ceil(timeDiff / (1000 * 3600 * 24));
+    return diffDays;
 }

@@ -149,7 +149,7 @@ function processIssues(data){
     console.log('--- processIssues');
     updateLoadStatus('Received ' + data.issues.length + ' issues details');
 
-    $('.ghx-summary').removeAttr('title'); // Dont like their <a> title so remove it.
+    $('.ghx-summary, .js-key-link').removeAttr('title'); // Dont like their <a> title so remove it.
     $('.columnStatus').remove();
 
     for(var key in workColumnStatuses) {
@@ -585,7 +585,7 @@ function addHovercardTo(elIssue, fields, issueKey){
     }
 
     // Attach hovercard event to each jira issue element
-    elIssue.find('.ghx-issue-fields:first, .ghx-key').first().hovercard({
+    elIssue.find('.ghx-key').first().hovercard({ // Removed ".ghx-issue-fields:first" because it is too big.
         detailsHTML:
             "<h3 style='float:left;padding-top:0px;'>Status</h3>" +
                 "<div style='float:right'><b>Created</b>: " + daysDiff(new Date(fields.created), new Date()) + ' days ago ' + " <b>Updated:</b> "+ daysDiff(new Date(fields.updated), new Date()) + ' days ago' + /*(new Date(fields.updated)).toLocaleDateString()*/
@@ -625,7 +625,7 @@ $.fn.hovercard = function(options) {
 
             // Left - different cases for plan view and work view
             if ($(this).hasClass('ghx-key')){
-                left = offset.left + $(this).width() + 10;
+                left = offset.left + $(this).width() + 50;
             }
             else {
                 if( (offset.left + $(this).width() + 45 + width) > window.innerWidth){

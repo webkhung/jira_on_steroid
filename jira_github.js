@@ -25,7 +25,7 @@ function JiraGithub(){
             var issueTitleNoLcp = issueTitle.substring(0, issueTitle.indexOf('LCP-'));
             var lcp = issueTitle.substring(issueTitle.indexOf('LCP-'));
             $('.js-issue-title').text(issueTitleNoLcp);
-            $('.js-issue-title').append(issueLinkHtml(lcp, '').text(lcp));
+            $('.js-issue-title').append(issueLinkHtmlOnGithub(lcp, '').text(lcp));
         }
     }
 

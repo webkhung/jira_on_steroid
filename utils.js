@@ -110,6 +110,15 @@ function issueLinkJsHtml(issueKey, cssClass){
     return anchor;
 }
 
+function issueLinkHtmlOnGithub(issueKey, cssClass){
+    var anchor = $('<a />').attr({
+        href: "https://jira.intuit.com/browse/" + issueKey,
+        target: "_blank",
+        class: cssClass
+    });
+    return anchor;
+}
+
 function issueLinkHtml(issueKey, cssClass){
     var anchor = $('<a />').attr({
         href: "https://" + window.location.hostname + "/browse/" + issueKey,

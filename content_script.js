@@ -206,7 +206,7 @@ function updateJiraBoard() {
     else {
         workColumnStatuses = {};
         // Disable caching for now.
-//        if(localStorage["JIS" + rapidViewID] === undefined) {
+        if(localStorage["JIS" + rapidViewID] === undefined) {
             $.get(baseUrl + "/rest/greenhopper/1.0/rapidviewconfig/editmodel.json?rapidViewId=" + rapidViewID, function( data ) {
                 data.rapidListConfig.mappedColumns.forEach(function(mappedColumn) {
                     mappedColumn.mappedStatuses.forEach(function(mappedStatus){
@@ -220,12 +220,12 @@ function updateJiraBoard() {
 
                 callJira(sprintID, data.filterConfig.id, !data.isSprintSupportEnabled);
             });
-//        }
-//        else {
-//            var filterId = localStorage["JIS" + rapidViewID];
-//            workColumnStatusesStringToHash(localStorage["JIS_ColumnStatuses" + rapidViewID]);
-//            callJira(sprintID, filterId);
-//        }
+        }
+        else {
+            var filterId = localStorage["JIS" + rapidViewID];
+            workColumnStatusesStringToHash(localStorage["JIS_ColumnStatuses" + rapidViewID]);
+            callJira(sprintID, filterId);
+        }
     }
 }
 
@@ -563,11 +563,11 @@ function addHovercardTo(elIssue, fields, issueKey){
     }
 
     // Acceptance Criteria
-    if (fields.customfield_13624 && fields.customfield_13624.length > 0) {
-        var accpCount = $('<p>' + fields.customfield_13624 + '</p>').find('li').length;
-        if(accpCount == 0) accpCount = 1;
-        addLabelTo(elIssue, 'AC ' + accpCount, 'bottom-top-left');
-    }
+//    if (fields.customfield_13624 && fields.customfield_13624.length > 0) {
+//        var accpCount = $('<p>' + fields.customfield_13624 + '</p>').find('li').length;
+//        if(accpCount == 0) accpCount = 1;
+//        addLabelTo(elIssue, 'AC ' + accpCount, 'bottom-top-left');
+//    }
 
     // Status count
     if(statusCounts[fields.status.name] === undefined) statusCounts[fields.status.name] = 0;

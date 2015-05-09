@@ -25,13 +25,13 @@
   ],
 
 
-  For public release, remove "github.jis, jira_github.js, intuit.js"
+  For public release, remove "github.jis, jira_github.js, intuit.js, options.html"
   "name": "JIRA Instant Agile",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "options_page": "options_public.html",
   "content_scripts": [
     {
-      "matches": [ "https://*/secure/RapidBoard.jspa*"],
+      "matches": [ "*://*/*/secure/RapidBoard.jspa*"],
       "css": ["lc-jira-color.css"],
       "js": ["lib/base64.js", "lib/underscore-min.js", "jquery.js", "utils.js", "jira_github_proxy.js", "others.js", "content_script.js"]
     }

@@ -1,4 +1,6 @@
 var hostname = "https://" + window.location.hostname;
+var documentUrl = document.URL.toString()
+var baseUrl = documentUrl.substring(0, documentUrl.indexOf('/secure/'));
 var hoverDescription, showLastComment, relatedCards, fixVersion;
 var statusCounts = {};
 var statusStoryPoints = {};
@@ -6,6 +8,7 @@ var workFields = "&maxResults=1000&fields=key,created,updated,status,summary,des
 var planFields = "&maxResults=1000&fields=key,created,updated,status,summary,description,parent,labels,subtasks,assignee,issuelinks,fixVersions,comment,components" + planExtraFields;
 var planIssueQuery = " and issuetype in standardIssueTypes() and ((sprint is empty and resolutiondate is empty) or sprint in openSprints() or sprint in futureSprints())"
 var workIssueQuery = " and (sprint in openSprints())";
+var kanbanIssueQuery = "";
 var jiraGithub = new JiraGithub();
 var localStorageSet = false;
 var workColumnStatuses = {}
@@ -202,8 +205,9 @@ function updateJiraBoard() {
     }
     else {
         workColumnStatuses = {};
-        if(localStorage["JIS" + rapidViewID] === undefined) {
-            $.get(hostname + "/rest/greenhopper/1.0/rapidviewconfig/editmodel.json?rapidViewId=" + rapidViewID, function( data ) {
+        // Disable caching for now.
+//        if(localStorage["JIS" + rapidViewID] === undefined) {
+            $.get(baseUrl + "/rest/greenhopper/1.0/rapidviewconfig/editmodel.json?rapidViewId=" + rapidViewID, function( data ) {
                 data.rapidListConfig.mappedColumns.forEach(function(mappedColumn) {
                     mappedColumn.mappedStatuses.forEach(function(mappedStatus){
                         var workStatus = new WorkStatus(mappedStatus.name, mappedColumn.id);
@@ -214,24 +218,24 @@ function updateJiraBoard() {
                 localStorage["JIS" + data.id] = data.filterConfig.id;
                 localStorage["JIS_ColumnStatuses" + rapidViewID] = workColumnStatusesToString();
 
-                callJira(sprintID, data.filterConfig.id);
+                callJira(sprintID, data.filterConfig.id, !data.isSprintSupportEnabled);
             });
-        }
-        else {
-            var filterId = localStorage["JIS" + rapidViewID];
-            workColumnStatusesStringToHash(localStorage["JIS_ColumnStatuses" + rapidViewID]);
-            callJira(sprintID, filterId);
-        }
+//        }
+//        else {
+//            var filterId = localStorage["JIS" + rapidViewID];
+//            workColumnStatusesStringToHash(localStorage["JIS_ColumnStatuses" + rapidViewID]);
+//            callJira(sprintID, filterId);
+//        }
     }
 }
 
-function callJira(sprintID, filterId){
+function callJira(sprintID, filterId, isKanban){
     if (sprintID !== undefined && sprintID != '') {
-        makeApiRequest(hostname + "/rest/api/latest/search?jql=sprint%3D" + sprintID + searchFields());
+        makeApiRequest(baseUrl + "/rest/api/latest/search?jql=sprint%3D" + sprintID + searchFields());
     }
     else {
-        var query = (isPlanView()? planIssueQuery : workIssueQuery);
-        makeApiRequest(hostname + "/rest/api/latest/search?jql=filter=" + filterId + query + searchFields());
+        var query = (isPlanView()? planIssueQuery : (isKanban ? kanbanIssueQuery : workIssueQuery));
+        makeApiRequest(baseUrl + "/rest/api/latest/search?jql=filter=" + filterId + query + searchFields());
     }
 }
 

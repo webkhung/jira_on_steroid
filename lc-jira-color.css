@@ -204,7 +204,6 @@
     overflow: hidden;
 }
 
-
 .ghx-issue-subtask {
     height: 30px;
     font-size: 10px !important;
@@ -215,9 +214,27 @@
     padding: 3px 10px !important;
 }
 
-.ghx-issue-subtask .ghx-type, .ghx-issue-subtask .ghx-flags { display: none !important;}
+.ghx-issue-subtask .ghx-type, .ghx-issue-subtask .ghx-flags { display: inherit !important; }
 
 .ghx-issue-subtask .ghx-avatar img, .ghx-issue-subtask .ghx-avatar .ghx-avatar-img {
-    width: 20px !important;
-    height: 20px !important;
+    width: inherit !important;
+    height: inherit !important;
+}
+
+
+.ghx-has-swimlanes .ghx-issue-subtask {
+    height: inherit !important;
+    font-size: inherit !important;
+    color: inherit !important;
+}
+
+.ghx-has-swimlanes .ghx-issue-subtask .ghx-issue-content {
+    padding: 10px 10px 10px 38px !important;
+}
+
+.ghx-has-swimlanes .ghx-issue-subtask .ghx-type, .ghx-has-swimlanes .ghx-issue-subtask .ghx-flags { display: inherit !important; }
+
+.ghx-has-swimlanes .ghx-issue-subtask .ghx-avatar img, .ghx-has-swimlanes .ghx-issue-subtask .ghx-avatar .ghx-avatar-img {
+    width: inherit !important;
+    height: inherit !important;
 }

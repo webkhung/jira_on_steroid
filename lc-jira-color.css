@@ -214,12 +214,13 @@
     padding: 3px 10px !important;
 }
 
-.ghx-issue-subtask .ghx-type, .ghx-issue-subtask .ghx-flags { display: inherit !important; }
+.ghx-issue-subtask .ghx-type, .ghx-issue-subtask .ghx-flags { display: none !important; }
 
 .ghx-issue-subtask .ghx-avatar img, .ghx-issue-subtask .ghx-avatar .ghx-avatar-img {
     width: inherit !important;
     height: inherit !important;
 }
+
 
 
 .ghx-has-swimlanes .ghx-issue-subtask {

@@ -217,8 +217,8 @@
 .ghx-issue-subtask .ghx-type, .ghx-issue-subtask .ghx-flags { display: none !important; }
 
 .ghx-issue-subtask .ghx-avatar img, .ghx-issue-subtask .ghx-avatar .ghx-avatar-img {
-    width: inherit !important;
-    height: inherit !important;
+    width: 20px !important;
+    height: 20px !important;
 }
 
 

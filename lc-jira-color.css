@@ -37,7 +37,7 @@
 .intu-label-top-left {
     top:0px;
     left:5px;
-    background-color: #ff65f0;
+    background-color: #fffe6a;
 }
 
 #intu-side-menu > #componentFilter, #intu-side-menu > #sortLabel { display: none; }
@@ -92,6 +92,21 @@
     text-align: left;
 }
 
+#intu-github {
+    display: none;
+    position: absolute;
+    width: 900px;
+    top: -250px;
+    right: 33px;
+    padding: 10px;
+    border: 1px solid black;
+    background-color: #fffdd9;
+    border-radius:3px;
+    text-align: left;
+    overflow: scroll;
+    height:800px;
+}
+
 #num-of-issues { color: #5ba0ff; }
 #num-of-points { color: #eda400; }
 
@@ -111,7 +126,7 @@
 
 .intu-watchers {
     font-size: 10px;
-    background-color: #fffca2;
+    text-decoration: underline;
 }
 
 #intu-mention {
@@ -236,4 +251,123 @@
 .ghx-has-swimlanes .ghx-issue-subtask .ghx-avatar img, .ghx-has-swimlanes .ghx-issue-subtask .ghx-avatar .ghx-avatar-img {
     width: inherit !important;
     height: inherit !important;
+}
+
+
+/* ------------------------------------------------------------------------- */
+
+.pure-table {
+    /* Remove spacing between table cells (from Normalize.css) */
+    border-collapse: collapse;
+    border-spacing: 0;
+    empty-cells: show;
+    border: 1px solid #cbcbcb;
+
+    font-size: 12px;
+    font-family: sans-serif;
+    color: #444;
+}
+
+.pure-table caption {
+    color: #000;
+    font: italic 85%/1 arial, sans-serif;
+    padding: 1em 0;
+    text-align: center;
+}
+
+.pure-table td,
+.pure-table th {
+    border-left: 1px solid #cbcbcb;/*  inner column border */
+    border-width: 0 0 0 1px;
+    font-size: inherit;
+    margin: 0;
+    overflow: visible; /*to make ths where the title is really long work*/
+    padding: 0.5em 1em; /* cell padding */
+}
+
+/* Consider removing this next declaration block, as it causes problems when
+there's a rowspan on the first cell. Case added to the tests. issue#432 */
+.pure-table td:first-child,
+.pure-table th:first-child {
+    border-left-width: 0;
+}
+
+.pure-table thead {
+    background-color: #e0e0e0;
+    color: #000;
+    text-align: left;
+    vertical-align: bottom;
+}
+
+.pure-table td {
+    background-color: transparent;
+}
+.pure-table-odd td {
+    background-color: #f2f2f2;
+}
+
+/* nth-child selector for modern browsers */
+.pure-table-striped tr:nth-child(2n-1) td {
+    background-color: #f2f2f2;
+}
+
+/* BORDERED TABLES */
+.pure-table-bordered td {
+    border-bottom: 1px solid #cbcbcb;
+}
+.pure-table-bordered tbody > tr:last-child > td {
+    border-bottom-width: 0;
+}
+
+
+/* HORIZONTAL BORDERED TABLES */
+
+.pure-table-horizontal td,
+.pure-table-horizontal th {
+    border-width: 0 0 1px 0;
+    border-bottom: 1px solid #cbcbcb;
+}
+.pure-table-horizontal tbody > tr:last-child > td {
+    border-bottom-width: 0;
+}
+
+/* ------------------------------------------------------------------------- */
+
+.pure-table {
+    background-color: white;
+}
+
+.pure-table-striped td p {
+    padding: 3px;
+    margin: 0px;
+}
+.pure-table-striped td {
+    width: 100px;
+    text-align: center;
+    font-size: 12px;
+}
+
+.pure-table-striped td.first-column {
+    width: 200px;
+    text-align: left;
+}
+
+.pure-table .highlight {
+    background-color: #ffe305 !important;
+}
+
+.pure-table .rc {
+    background-color: #cbf7ff !important;
+}
+
+.pure-table .meta {
+    font-size: 10px;
+}
+
+.pure-table th {
+    text-align: center;
+}
+
+.pure-table .underline {
+    border-bottom: solid 3px black;
 }

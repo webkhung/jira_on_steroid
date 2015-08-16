@@ -53,7 +53,6 @@ function JiraGithub(){
                 githubIssues = cbIssues;
             });
 
-            // Fetch commits
             var repo = github.getRepo('live-community', 'live_community');
             repo.listTags(function(_, tags){
                 var tmp = getBaseRC(tags);
@@ -63,9 +62,7 @@ function JiraGithub(){
                     repo.compare(baseSHA, headSHA, function(err, commits){
                         console.log('Base (Oldest) SHA'  + baseSHA + '--- Head SHA' + headSHA);
                         commitsStatus = new CommitsStatus(baseSHA, headSHA);
-                        commitsStatus.tags = tags;
-                        master(commits, headSHA);
-                        matchEnvsWithCommits(repo, tags, baseSHA);
+                        matchEnvsWithCommits(repo, commits, tags, baseSHA);
                     });
                 });
 
@@ -126,36 +123,26 @@ function JiraGithub(){
     }
 }
 
-function addEnvLabelToCard(){
-    var lcps = Object.keys(commitsStatus.lcps);
-    for(var i=0;i<lcps.length; i++){
-        var envNames = '';
-        commitsStatus.lcps[lcps[i]].forEach(function(envName){
-            envNames = envNames + ' ' + envName;
-        });
-        var key = 'LCP-' + lcps[i];
-        var elIssue = $("div[data-issue-key='" + key + "'].ghx-issue, div[data-issue-key='" + key + "'].ghx-issue-compact").first();
-
-        addLabelTo(elIssue, envNames, 'top-left');
-    }
-}
-
 function checkCommitsStatus(){
     console.log('checking......');
     if (commitsStatus && commitsStatus.envStatus.length == ALL_ENVS.length + 1){
         console.log('DONE');
         console.log(commitsStatus.envStatus);
         clearInterval(myVar);
-        doStuffs();
+
+        var lcps = Object.keys(commitsStatus.lcps);
+        for(var i=0;i<lcps.length; i++){
+            var envNames = '';
+            commitsStatus.lcps[lcps[i]].forEach(function(envName){
+                envNames = envNames + ' ' + envName;
+            });
+            var key = 'LCP-' + lcps[i];
+            var elIssue = $("div[data-issue-key='" + key + "'].ghx-issue, div[data-issue-key='" + key + "'].ghx-issue-compact").first();
+
+            addLabelTo(elIssue, envNames, 'top-left');
+        }
     }
 }
-
-function doStuffs(){
-    addEnvLabelToCard();
-    buildTable();
-}
-
-
 
 function CommitsStatus(baseSHA, headSHA){
     this.baseSHA = baseSHA;
@@ -164,7 +151,6 @@ function CommitsStatus(baseSHA, headSHA){
     this.addEnvStatus = function(obj){
         this.envStatus[this.envStatus.length] = obj;
     }
-    this.tags;
     this.lcps = {};
     this.addLCP = function(lcp, envName){
         if(this.lcps[lcp] === undefined){
@@ -190,7 +176,7 @@ function EnvStatus(url, name, sha, tag){
 function getBaseRC(tags){
     var today = new Date();
     var twoWeeksAgo = new Date(today);
-    twoWeeksAgo.setDate(today.getDate()-20);
+    twoWeeksAgo.setDate(today.getDate()-15);
 
     var rcDate, rcSha;
     for(var i=0; i<tags.length; i++){
@@ -206,17 +192,15 @@ function getBaseRC(tags){
     return [rcSha, tags];
 }
 
-function master(commits, headSHA){
+function matchEnvsWithCommits(repo, commits, tags, baseSHA){
     console.log('----- MASTER -----');
     var lcps = envLCPs('', '', '', commits);
 
-    envStatus = new EnvStatus('master', 'master', headSHA, '');
+    envStatus = new EnvStatus('master', '', '', '');
     envStatus.lcps = lcps;
     commitsStatus.addEnvStatus(envStatus);
     printLCPs(lcps);
-}
 
-function matchEnvsWithCommits(repo, tags, baseSHA){
     var topRC = tags[0]['commit']['sha'];
 
     for(var i=0; i < ALL_ENVS.length; i++){
@@ -285,15 +269,6 @@ function envLCPs(envSHA, topRC, envName, commits){
     return mergedLCPs;
 }
 
-function shaInTag(sha){
-    for(var i=0; i < commitsStatus['tags'].length; i++){
-        if(commitsStatus['tags'][i]['commit']['sha'] == sha){
-            return commitsStatus['tags'][i]['name'];
-        }
-    };
-    return null;
-}
-
 function storeMergedCommit(commit, sha, envName, mergedLCPs){
     var msg = commit['message'];
     var isPR = isPullRequest(msg);
@@ -312,29 +287,14 @@ function storeMergedCommit(commit, sha, envName, mergedLCPs){
         }
     }
     else {
-        var maybeShaTag = shaInTag(sha);
-
-        if(lcp || isPR || maybeShaTag){
-
-            var msg;
-            var branch = '';
-            if(lcp || isPR){
-                var tmp = msg.split('from live-community/')[1].split('\n\n');
-                branch = tmp[0];
-                msg = tmp[1];
-                var found = msg.match(/(.*)LCP-(\d*)/);
-                if(found && found.length > 0){
-                    msg = found[1];
-                }
-            }
-            else if(maybeShaTag) {
-                msg = msg.split('\n')[0];
-            }
-            mergedLCPs[mergedLCPs.length] = {'lcp': lcp, 'date' : commit['author']['date'], 'sha' : sha, 'branch' : branch, tag: maybeShaTag, 'message' : msg};
-
-            if(lcp) {
-                commitsStatus.addLCP(lcp, envName);
-            }
+        if(lcp) {
+            mergedLCPs[mergedLCPs.length] = {'lcp': lcp, 'date' : commit['author']['date'], 'sha' : sha, 'message' : ''};
+            commitsStatus.addLCP(lcp, envName);
+        }
+        else if(isPR){
+            var tmp = msg.split('from live-community/')[1].split('\n\n');
+            var info = 'branch: ' + tmp[0] + ' : ' + tmp[1];
+            mergedLCPs[mergedLCPs.length] = {'lcp': '', 'date' : commit['author']['date'], 'sha' : sha, 'message' : info};
         }
     }
 }
@@ -362,7 +322,7 @@ function extractRevertedLCP(message){
 
 function printLCPs(lcps, envStatus){
     for(var i=0; i<lcps.length; i++){
-        console.log(lcps[i]['lcp'] + ' ' + lcps[i]['date'] + ' ' + lcps[i]['sha'] + ' '  + lcps[i]['branch'] + ' '  + lcps[i]['message']);
+        console.log(lcps[i]['lcp'] + ' ' + lcps[i]['date'] + ' ' + lcps[i]['sha'] + ' '  + lcps[i]['message']);
     }
 }
 
@@ -381,126 +341,4 @@ function showAllCommits(commits){
     for(var i=0; i < commits['commits'].length; i++){
         console.log(commits['commits'][i]['sha'] + commits['commits'][i]['commit']['author']['date']);
     }
-}
-
-function findEnv(name){
-    for(var i=0; i < commitsStatus['envStatus'].length; i++){
-        if(commitsStatus['envStatus'][i]['name'] == name){
-            return commitsStatus['envStatus'][i];
-        }
-    }
-    return null;
-}
-
-function buildTable(){
-    $table = $('<table class="pure-table pure-table-striped"></table>');
-
-    $trName = $('<tr></tr>');
-    $trName.append('<th></th>');
-
-    $trTag = $('<tr></tr>');
-    $trTag.append('<td>Tag</td>');
-
-    $trSha = $('<tr></tr>');
-    $trSha.append('<td class=underline>SHA</td>');
-
-    ALL_ENVS.splice(0, 0, ['master', 'master']);
-
-    ALL_ENVS.forEach(function(ENV){
-        var env = findEnv(ENV[1]);
-        $trName.append('<th>' + env['name'] + '</th>');
-        $('<td class=underline></td>').append(buildShaLink(env['sha'])).appendTo($trSha);
-        $trTag.append( $('<td/>').append(buildTagLink(env['tag'])));
-    });
-
-    $thead = $('<thead/>');
-    $thead.append($trName);
-    $table.append($thead);
-
-    $tbody = $('<tbody/>');
-
-    $tbody.append($trTag);
-    $tbody.append($trSha);
-    $table.append($tbody);
-    $('#placeholder').append($table);
-
-    // master first
-    var env = findEnv('master');
-    $tr = $('<tr></tr>');
-    for(var i=env['lcps'].length-1; i >= 0; i--) {
-        lcp = env['lcps'][i];
-        $trLCP = $('<tr></tr>');
-
-        $tdLCP = $('<td class="first-column"></td>');
-        if(lcp['lcp']) {
-            $jira = buildJiraLink(lcp['lcp']);
-            $tdLCP.append($jira);
-        }
-        $desc = $('<p>' + lcp['message'] + '</p>'); // lcp['branch']
-        $tdLCP.append($desc);
-
-
-        $sha = buildShaLink(lcp['sha']);
-        $meta = $('<p class="meta" />');
-        $meta.append(formatDate(lcp['date'])).append(' ').append($sha);
-        if(lcp['tag']){
-            $tag = buildTagLink(lcp['tag']);
-            $meta.append(' ').append($tag);
-            $tdLCP.addClass('rc');
-        }
-        $tdLCP.append($meta);
-
-        $trLCP.append($tdLCP);
-
-        ALL_ENVS.forEach(function(ENV){
-            var env2 = findEnv(ENV[1]);
-            $('<td/>').attr({id: env2['name'] + lcp['sha']}).appendTo($trLCP);
-        });
-
-        $tbody.append($trLCP);
-    };
-
-    ALL_ENVS.forEach(function(ENV){
-        var env = findEnv(ENV[1]);
-        env['lcps'].forEach(function(lcp){
-            $('#' + env['name'] + lcp['sha']).addClass('highlight').text(env['name']);
-        });
-    });
-}
-
-function formatDate(date){
-    var objDate = new Date(date);
-    var day = objDate.getDate();
-    var month = objDate.getMonth() + 1;
-    var year = objDate.getFullYear();
-    return month + '-' + day + '-' + year;
-}
-
-function buildShaLink(sha){
-    $link = $('<a/>');
-    $link.attr({
-        href: 'https://github.com/live-community/live_community/commit/' + sha,
-        target: '_blank'
-    }).text(sha.substring(0,5));
-    return $link;
-}
-
-function buildTagLink(tag){
-    if(tag == '') return '';
-
-    $link = $('<a/>');
-    $link.attr({
-        href: 'https://github.com/live-community/live_community/releases/tag/' + tag,
-        target: '_blank'
-    }).text(tag);
-    return $link;
-}
-
-function buildJiraLink(lcp){
-    $link = $('<a/>');
-    $link.attr({
-        href: 'https://jira.intuit.com/browse/LCP-' + lcp,
-        target: '_blank'
-    }).text('LCP-' + lcp);
-    return $('<p />').append($link);
 }

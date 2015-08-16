@@ -74,27 +74,32 @@ function pluginCardsWatching(myName){
 }
 
 function pluginToggleStatus(){
-    $('#intu-help, #intu-filter-users, #intu-filter-components, #intu-mention').hide();
+    $('#intu-help, #intu-filter-users, #intu-filter-components, #intu-mention, #intu-github').hide();
     $('#intu-status').toggle();
 }
 
+function pluginShowGithubDashboard(){
+    $('#intu-help, #intu-filter-users, #intu-filter-components, #intu-mention').hide();
+    $('#intu-github').toggle();
+}
+
 function pluginHelp(){
-    $('#intu-status, #intu-filter-users, #intu-filter-components, #intu-mention').hide();
+    $('#intu-status, #intu-filter-users, #intu-filter-components, #intu-mention, #intu-github').hide();
     $('#intu-help').toggle();
 }
 
 function pluginShowUserFilter(){
-    $('#intu-status, #intu-help, #intu-filter-components, #intu-mention').hide();
+    $('#intu-status, #intu-help, #intu-filter-components, #intu-mention, #intu-github').hide();
     $('#intu-filter-users').toggle();
 }
 
 function pluginShowComponentFilter(){
-    $('#intu-status, #intu-help, #intu-filter-users, #intu-mention').hide();
+    $('#intu-status, #intu-help, #intu-filter-users, #intu-mention, #intu-github').hide();
     $('#intu-filter-components').toggle();
 }
 
 function pluginMention(){
-    $('#intu-status, #intu-help, #intu-filter-users, #intu-filter-components').hide();
+    $('#intu-status, #intu-help, #intu-filter-users, #intu-filter-components, #intu-github').hide();
     $('#intu-mention').toggle();
 }
 

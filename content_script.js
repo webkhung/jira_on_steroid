@@ -278,6 +278,7 @@ function addPluginMenu(){
     $('#intu-side-menu').remove();
     $('body').append("<div id='intu-side-menu'></div>");
     $('#intu-side-menu').append("<a href='javascript:pluginMaxSpace();' title='Maximize Space' class='masterTooltip'><img width=16 height=16 src=" + chrome.extension.getURL('images/max.png') + "></a>");
+    $('#intu-side-menu').append("<a href='javascript:pluginShowGithubDashboard();' id='githubDashboard' title='Github Dashboard' class='masterTooltip'><img width=16 height=16 src=" + chrome.extension.getURL('images/github.png') + "></a>");
 
     if(extraFields.indexOf('customfield_11712')>=0)
         $('#intu-side-menu').append("<a href='javascript:pluginCardsWatching(\"" + myName() + "\");' title='Show cards I am watching' class='masterTooltip'><img width=16 height=16 src=" + chrome.extension.getURL('images/watching.png') + "></a>");
@@ -312,6 +313,8 @@ function addPluginMenu(){
         </div>  \
         "
     );
+
+    $('#intu-side-menu').append("<div id='intu-github'><div id='placeholder'></div></div>")
 
 //    <div id='intu-help'>  \
 //        <strong>For configurable settings, go to the <a href='" + chrome.extension.getURL(optionsPage) + "' target='_blank'>options</a> page. \

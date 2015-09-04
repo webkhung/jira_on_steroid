@@ -13,13 +13,15 @@ var jiraGithub = new JiraGithub();
 var localStorageSet = false;
 var workColumnStatuses = {}
 var setTimeoutLoadPlugin;
+var hasGithub;
+var releaseIssues = [];
 
 if(window.location.href.indexOf('RapidBoard') > 0) {
     setupDocument();
 
     chrome.runtime.sendMessage({method: "getLocalStorage", key: "settings"}, function(response) {
         localStorageSet = true;
-        jiraGithub.initVariables(response);
+        hasGithub = jiraGithub.initVariables(response);
         watchersNames = response.watchersNames;
         hoverDescription = response.hoverDescription == 'true';
         showLastComment = response.lastComment == 'true';
@@ -37,12 +39,44 @@ if(window.location.href.indexOf('RapidBoard') > 0) {
     });
 
     setTimeoutLoadPlugin = setTimeout(function(){
-        console.log('--- setTimeout');
         loadPlugin();
     }, 4000);
 }
+else if(window.location.href.indexOf('browse') > 0){
+
+    // Inject script.js to the document
+    var s = document.createElement('script');
+    s.src = chrome.extension.getURL('script.js');
+    (document.head||document.documentElement).appendChild(s);
+    s.onload = function() {
+        s.parentNode.removeChild(s);
+    };
+
+    $('body').append("<div class='hovercard'></div>");
+    $('body').append("<div id='intu-menu'></div>");
+
+    chrome.runtime.sendMessage({method: "getLocalStorage", key: "settings"}, function(response) {
+        localStorageSet = true;
+        hasGithub = jiraGithub.initVariables(response);
+        watchersNames = response.watchersNames;
+        hoverDescription = response.hoverDescription == 'true';
+        showLastComment = response.lastComment == 'true';
+        relatedCards = response.relatedCards == 'true';
+        fixVersion = response.fixVersion == 'true';
+    });
+
+    addPluginMenu();
+
+    var script = document.createElement('script');
+    script.appendChild(document.createTextNode('('+ setupBrowsePageEvent +')();'));
+    (document.body || document.head || document.documentElement).appendChild(script);
+}
 else {
     jiraGithub.setIntervalChangeGithubPage();
+}
+
+function setupBrowsePageEvent(){
+    setInterval(function(){checkACBrowse()}, 2000);
 }
 
 function setupDocument(){
@@ -135,6 +169,8 @@ function setupClientLoadPluginEvent() {
         $(window).resize(function() {
             setTimeout(function(){pluginAdjustSpace()}, 1000);
         });
+
+//        setInterval(function(){checkACPopup()}, 2000);
     }, 4000);
 
     console.yo = console.log;
@@ -189,6 +225,8 @@ function processIssues(data){
     }
 
     setIssueStatus(statusCounts, statusStoryPoints);
+
+    createReleaseNotes();
 }
 
 function updateJiraBoard() {
@@ -278,7 +316,10 @@ function addPluginMenu(){
     $('#intu-side-menu').remove();
     $('body').append("<div id='intu-side-menu'></div>");
     $('#intu-side-menu').append("<a href='javascript:pluginMaxSpace();' title='Maximize Space' class='masterTooltip'><img width=16 height=16 src=" + chrome.extension.getURL('images/max.png') + "></a>");
-    $('#intu-side-menu').append("<a href='javascript:pluginShowGithubDashboard();' id='githubDashboard' title='Github Dashboard' class='masterTooltip'><img width=16 height=16 src=" + chrome.extension.getURL('images/github.png') + "></a>");
+
+    if(hasGithub){
+        $('#intu-side-menu').append("<a href='javascript:pluginShowGithubDashboard();' id='githubDashboard' title='Github Dashboard' class='masterTooltip'><img width=16 height=16 src=" + chrome.extension.getURL('images/github.png') + "></a>");
+    }
 
     if(extraFields.indexOf('customfield_11712')>=0)
         $('#intu-side-menu').append("<a href='javascript:pluginCardsWatching(\"" + myName() + "\");' title='Show cards I am watching' class='masterTooltip'><img width=16 height=16 src=" + chrome.extension.getURL('images/watching.png') + "></a>");
@@ -301,7 +342,16 @@ function addPluginMenu(){
         <a id='pluginMentionCount' href='javascript:pluginMention();' title='You are mentioned' class='masterTooltip'></a>\
         "
     );
-//    <a href='javascript:pluginHelp();' title='Options' class='masterTooltip'><img width=16 height=16 src=" + chrome.extension.getURL('images/info.png') + "></a>  \
+
+    $('#intu-side-menu').append("<a href='javascript:pluginRelease();' id='release' title='Release Notes' class='masterTooltip'><img width=16 height=16 src=" + chrome.extension.getURL('images/notes.png') + "></a>");
+
+
+    if(window.location.href.indexOf('browse') > 0) {
+        $('#intu-side-menu').append("<a href='javascript:convertToCheckboxesBrowse();' id='checklist' title='Convert to AC to Checklist' class='masterTooltip'><img width=16 height=16 src=" + chrome.extension.getURL('images/checkbox.png') + "></a>");
+    }
+    else {
+        $('#intu-side-menu').append("<a href='javascript:convertToCheckboxesPopup();' id='checklist' title='Convert to AC to Checklist' class='masterTooltip'><img width=16 height=16 src=" + chrome.extension.getURL('images/checkbox.png') + "></a>");
+    }
 
     $('#intu-side-menu').append("<div id='intu-mention'></div>")
     $('#intu-side-menu').append("\
@@ -314,11 +364,9 @@ function addPluginMenu(){
         "
     );
 
-    $('#intu-side-menu').append("<div id='intu-github'><div id='placeholder'></div></div>")
-
-//    <div id='intu-help'>  \
-//        <strong>For configurable settings, go to the <a href='" + chrome.extension.getURL(optionsPage) + "' target='_blank'>options</a> page. \
-//        </div> \
+    if(hasGithub){
+        $('#intu-side-menu').append("<div id='intu-github'><div id='placeholder'></div></div>")
+    }
 
     $('.masterTooltip').hover(function(){
         var title = $(this).attr('title');
@@ -424,8 +472,6 @@ function createLabelFrom(labels, issueIsPR, elIssue){
 
     if (displayLabel.length > 0) {
         elIssue.css('background-color', 'rgba('+ hexToRgb(shadeColor(stringToColour(displayLabel), 20)) + ',0.35)');
-//        elIssue.css('background-color', 'rgba('+ hexToRgb(stringToColour(displayLabel)) + ',0.2)');
-        $('#sortLabel').css('display', 'block');
     }
 
     if(issueIsPR){
@@ -580,6 +626,10 @@ function addHovercardTo(elIssue, fields, issueKey){
     if(statusStoryPoints[fields.status.name] === undefined) statusStoryPoints[fields.status.name] = 0;
     if(fields[storyPointsField]) statusStoryPoints[fields.status.name] = statusStoryPoints[fields.status.name] + fields[storyPointsField];
 
+    if(fields.status.name == 'Closed'){
+        releaseIssues[releaseIssues.length] = '* [' + elIssue.data('issue-key') + '] (https://jira.intuit.com/browse/' +  elIssue.data('issue-key') + '): ' + fields.summary;
+    }
+
     // This is on Plan view. Add summary
     var summaryHtml = '';
     if (elIssue.hasClass('ghx-issue-compact')){
@@ -609,6 +659,41 @@ function addHovercardTo(elIssue, fields, issueKey){
         relatedIssues: subtaskKeys.concat(parentKey),
         blocks: blocks
     });
+}
+
+function createReleaseNotes(){
+    /*
+
+     **Changes**
+     * [LCP-1533](https://jira.intuit.com/browse/LCP-1533): Search Experience: Related Searches.
+     * [LCP-1564](https://jira.intuit.com/browse/LCP-1564): Browse Experience Finish in Split.
+     * [LCP-1580](https://jira.intuit.com/browse/LCP-1580): Move from http to https STS endpoints.
+
+     **Bugs**
+
+     **Feature**
+
+     **Commits**
+     https://github.com/live-community/live_community/compare/RC-2015-08-05...RC-2015-08-18
+
+     **Deployment Instructions**
+     Deploy `chef_repo` databag changes for https STS endpoints.
+
+     */
+
+    // Set release notes
+    $releaseNotes = $('<div id=intu-release></div>');
+    $releaseNotes.append('**Changes**<br>');
+    releaseIssues.forEach(function(data){
+        $releaseNotes.append(data);
+        $releaseNotes.append('<br>');
+    });
+    $releaseNotes.append('**Bugs**<br>');
+    $releaseNotes.append('**Feature**<br>');
+    $releaseNotes.append('**Commits**<br>');
+    $releaseNotes.append('https://github.com/live-community/live_community/compare/[LAST TAG]...[NEW TAG]<br>');
+    $releaseNotes.append('**Deployment Instructions**<br>');
+    $('#intu-side-menu').append($releaseNotes);
 }
 
 $.fn.hovercard = function(options) {

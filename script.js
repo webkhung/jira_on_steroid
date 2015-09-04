@@ -74,32 +74,208 @@ function pluginCardsWatching(myName){
 }
 
 function pluginToggleStatus(){
-    $('#intu-help, #intu-filter-users, #intu-filter-components, #intu-mention, #intu-github').hide();
+    $('#intu-release, #intu-filter-users, #intu-filter-components, #intu-mention, #intu-github').hide();
     $('#intu-status').toggle();
 }
 
 function pluginShowGithubDashboard(){
-    $('#intu-help, #intu-filter-users, #intu-filter-components, #intu-mention').hide();
+    $('#intu-release, #intu-filter-users, #intu-filter-components, #intu-mention').hide();
     $('#intu-github').toggle();
 }
 
-function pluginHelp(){
+function pluginRelease(){
     $('#intu-status, #intu-filter-users, #intu-filter-components, #intu-mention, #intu-github').hide();
-    $('#intu-help').toggle();
+    $('#intu-release').toggle();
+}
+
+var lastEditPopup = '';
+function checkACPopup(){
+    jQuery(function($) {
+        var textarea =  $('.jeditor_inst[name=customfield_13624]');
+        if(textarea.length == 0) {
+            lastEditPopup = '';
+        }
+
+        var ckeId = textarea.attr('id');
+        var editor = CKEDITOR.instances[ckeId];
+
+        if(editor !== undefined) {
+            if(lastEditPopup != $('.jira-dialog-heading h2').text()){
+                lastEditPopup = $('.jira-dialog-heading h2').text();
+                convertToCheckboxesPopup();
+            }
+        }
+    });
+}
+
+function checkACBrowse(){
+    jQuery(function($) {
+        if($('#field-customfield_13624 .verbose .flooded').length > 0){
+            var html = $('#field-customfield_13624 .verbose .flooded').html();
+            if(html == '' || html.indexOf('[]') > 0 || html.indexOf('[+]') > 0){
+                convertToCheckboxesBrowse();
+            }
+        }
+    });
+}
+
+function checkboxClicked(checkbox){
+    jQuery(function($) {
+        $(checkbox).attr('checked', $(checkbox).attr('checked') == 'checked' ? 'checked' : false);
+
+        $newHtml = $($('.jira-dialog #ac_list').html());
+        $newHtml.find('p').each(function(){
+
+            if($(this).find('input').attr('checked') == 'checked'){
+                $(this).find('input').remove();
+                $(this).prepend('[+]');
+            }
+            else {
+                $(this).find('input').remove();
+                $(this).prepend('[]');
+            }
+        });
+        newHtml = $newHtml[0].outerHTML;
+        var editor = getEditor();
+        editor.setData(newHtml);
+    });
+}
+
+function AddNewCheckboxItem(){
+    jQuery(function($) {
+        var itemText = $('#checkbox_item_text').val();
+        if(itemText == '') return;
+        itemText = '<p>[]' + itemText + '</span></p>';
+
+        var editor = getEditor();
+        var html = editor.getData();
+
+        var newHtml = '';
+        if($(html).prop("tagName") != 'DIV'){
+            html = '<div>' + html + '</div>';
+        }
+        $(html).find('p').each(function(){
+            newHtml += '<p>' + $(this).html() + '</p>';
+        });
+
+        editor.setData(newHtml + itemText);
+
+        convertToCheckboxesPopup();
+
+        $('#checkbox_item_text').val('');
+    });
+}
+
+function getTextarea(){
+    var textarea =  jQuery('.jira-dialog .jeditor_inst[name=customfield_13624]');
+    return textarea;
+}
+
+function getEditor(){
+    var textarea = getTextarea();
+    if(textarea.length == 0) return null;
+    var ckeId = textarea.attr('id');
+    var editor = CKEDITOR.instances[ckeId];
+    return editor;
+}
+
+var intervalIdCheckPopupReady;
+
+function triggerPopup(){
+    jQuery(document).trigger({ type: 'keypress', which: "e".charCodeAt(0) });
+    intervalIdCheckPopupReady = setInterval(function(){checkPopupReady()}, 2000);
+}
+
+function checkPopupReady(){
+    console.log('------- checkPopupReady');
+    var textarea = getTextarea();
+    if(textarea == null || textarea.length == 0) return;
+    clearTimeout(intervalIdCheckPopupReady);
+    convertToCheckboxesPopup();
+}
+
+function convertToCheckboxesBrowse(){
+    jQuery(function($) {
+        var html = $('#field-customfield_13624 .verbose .flooded').html();
+        var lines = html.split('\n');
+        var newHtml = '';
+        for(var i=0; i<lines.length; i++){
+            var original = lines[i].trim();
+            if(original.indexOf('[]') >= 0) {
+                newHtml += original.replace('[]',"<input type=checkbox disabled>");
+            }
+            else if(original.indexOf('[+]') >= 0){
+                newHtml += original.replace('[+]',"<input type=checkbox disabled checked>");
+            }
+        }
+
+        if($('#ac_list').length == 0){
+            jQuery('#customfield_13624-val').hide();
+            jQuery('#customfield_13624-val').before('<div id=ac_list onclick="triggerPopup()">' + newHtml + '</div>');
+        }
+        else {
+            $('#ac_list').html(newHtml);
+        }
+    });
+}
+
+function convertToCheckboxesPopup(){
+    jQuery(function($) {
+        console.log('----------- convertToCheckboxesPopup');
+
+        var textarea = getTextarea();
+        if(textarea == null) return;
+        var editor = getEditor();
+
+        // Hide the rich text editor
+        $('.jeditor_inst[name=customfield_13624]').next().hide();
+
+        // Get data
+        var html = editor.getData();
+        if($(html).prop("tagName") != 'DIV'){
+            html = '<div>' + html + '</div>';
+        }
+
+        // Convert mark down to checkbox
+        var newHtml = $(html);
+        newHtml.find('p').each(function(index){
+            var original = $(this).html();
+            if(original.indexOf('[]') >= 0) {
+                $(this).html("<input type=checkbox onclick='checkboxClicked(this)'>" + original.replace('[]',''));
+            }
+            else if(original.indexOf('[+]') >= 0){
+                $(this).html("<input type=checkbox checked onclick='checkboxClicked(this)'>" + original.replace('[+]',''));
+            }
+        });
+        newHtml = newHtml[0].outerHTML;
+
+        if($('.jira-dialog #ac_list').length == 0){
+            textarea.parent().prepend(
+                '<div id=ac_list>' + newHtml + '</div>' +
+                '<div style="margin-bottom:30px;">' +
+                    '<input type="text" id="checkbox_item_text">' +
+                    '<a href="javascript:AddNewCheckboxItem();">Add New</a>' +
+                '</div>'
+            );
+        }
+        else {
+            $('.jira-dialog #ac_list').html(newHtml);
+        }
+    });
 }
 
 function pluginShowUserFilter(){
-    $('#intu-status, #intu-help, #intu-filter-components, #intu-mention, #intu-github').hide();
+    $('#intu-status, #intu-release, #intu-filter-components, #intu-mention, #intu-github').hide();
     $('#intu-filter-users').toggle();
 }
 
 function pluginShowComponentFilter(){
-    $('#intu-status, #intu-help, #intu-filter-users, #intu-mention, #intu-github').hide();
+    $('#intu-status, #intu-release, #intu-filter-users, #intu-mention, #intu-github').hide();
     $('#intu-filter-components').toggle();
 }
 
 function pluginMention(){
-    $('#intu-status, #intu-help, #intu-filter-users, #intu-filter-components, #intu-github').hide();
+    $('#intu-status, #intu-release, #intu-filter-users, #intu-filter-components, #intu-github').hide();
     $('#intu-mention').toggle();
 }
 

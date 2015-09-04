@@ -40,7 +40,7 @@
     background-color: #fffe6a;
 }
 
-#intu-side-menu > #componentFilter, #intu-side-menu > #sortLabel { display: none; }
+#intu-side-menu > #componentFilter { display: none; }
 
 #intu-side-menu {
     padding: 7px 4px;
@@ -49,7 +49,7 @@
     top: 265px;
     right: 10px;
     background-color: #FFD738;
-    z-index: 1;
+    z-index: 100000;
     font-size: 13px;
     text-align: center;
 }
@@ -79,7 +79,7 @@
     color: red;
 }
 
-#intu-status, #intu-help, #intu-filter-users, #intu-mention, #intu-filter-components {
+#intu-status, #intu-release, #intu-filter-users, #intu-mention, #intu-filter-components {
     display: none;
     position: absolute;
     width: 500px;
@@ -370,4 +370,8 @@ there's a rowspan on the first cell. Case added to the tests. issue#432 */
 
 .pure-table .underline {
     border-bottom: solid 3px black;
+}
+
+#ac_list p {
+    margin-top: 5px !important;
 }

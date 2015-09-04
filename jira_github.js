@@ -2,11 +2,11 @@ var githubIssues = [];
 var githubUsername, githubPassword, githubUser, githubRepo, watchersNames;
 
 var ALL_ENVS = [
-    ['https://ttlc.intuit.com', 'tax'],
-    ['https://community.intuit.com', 'shared'],
-    ['https://turbotax-community-e2e.intuit.com', 'tax-e2e'],
+    ['https://foo.qa.lc.a.intuit.com', 'qa'],
     ['https://community.e2e.lc.a.intuit.com', 'shared-e2e'],
-    ['https://foo.qa.lc.a.intuit.com', 'qa']
+    ['https://turbotax-community-e2e.intuit.com', 'tax-e2e'],
+    ['https://community.intuit.com', 'shared'],
+    ['https://ttlc.intuit.com', 'tax']
 ];
 
 var commitsStatus;
@@ -18,6 +18,8 @@ function JiraGithub(){
         githubPassword = response.githubPassword;
         githubUser = response.githubUser;
         githubRepo = response.githubRepo;
+
+        return (githubUsername.length > 0 && githubPassword.length > 0 && githubUser.length > 0 && githubRepo.length > 0);
     }
 
     this.setIntervalChangeGithubPage = function(){
@@ -47,6 +49,7 @@ function JiraGithub(){
                 password: githubPassword,
                 auth: "basic"
             });
+
             var issues = github.getIssues(githubUser, githubRepo); // 'live-community', 'live_community'
             githubIssues = [];
             issues.list('open', function(err, cbIssues) {
@@ -71,6 +74,9 @@ function JiraGithub(){
 
                 myVar = setInterval(checkCommitsStatus, 1000);
             });
+        }
+        else {
+            $('#placeholder').text('Missing GitHub login details');
         }
     }
 
@@ -136,7 +142,9 @@ function addEnvLabelToCard(){
         var key = 'LCP-' + lcps[i];
         var elIssue = $("div[data-issue-key='" + key + "'].ghx-issue, div[data-issue-key='" + key + "'].ghx-issue-compact").first();
 
-        addLabelTo(elIssue, envNames, 'top-left');
+        if(typeof(addLabelTo) == 'function') {
+            addLabelTo(elIssue, envNames, 'top-left');
+        }
     }
 }
 
@@ -404,9 +412,11 @@ function buildTable(){
     $trSha = $('<tr></tr>');
     $trSha.append('<td class=underline>SHA</td>');
 
-    ALL_ENVS.splice(0, 0, ['master', 'master']);
+    var envs = ALL_ENVS.slice(0);
 
-    ALL_ENVS.forEach(function(ENV){
+    envs.splice(0, 0, ['master', 'master']);
+
+    envs.forEach(function(ENV){
         var env = findEnv(ENV[1]);
         $trName.append('<th>' + env['name'] + '</th>');
         $('<td class=underline></td>').append(buildShaLink(env['sha'])).appendTo($trSha);
@@ -422,7 +432,7 @@ function buildTable(){
     $tbody.append($trTag);
     $tbody.append($trSha);
     $table.append($tbody);
-    $('#placeholder').append($table);
+    $('#placeholder').empty().append($table);
 
     // master first
     var env = findEnv('master');
@@ -452,7 +462,7 @@ function buildTable(){
 
         $trLCP.append($tdLCP);
 
-        ALL_ENVS.forEach(function(ENV){
+        envs.forEach(function(ENV){
             var env2 = findEnv(ENV[1]);
             $('<td/>').attr({id: env2['name'] + lcp['sha']}).appendTo($trLCP);
         });
@@ -460,7 +470,7 @@ function buildTable(){
         $tbody.append($trLCP);
     };
 
-    ALL_ENVS.forEach(function(ENV){
+    envs.forEach(function(ENV){
         var env = findEnv(ENV[1]);
         env['lcps'].forEach(function(lcp){
             $('#' + env['name'] + lcp['sha']).addClass('highlight').text(env['name']);

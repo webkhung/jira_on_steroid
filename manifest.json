@@ -1,8 +1,8 @@
 {
   "description": "",
   "icons": { "16": "images/jira16.png",
-              "48": "images/jira48.png",
-              "128": "images/jira128.png" },
+             "48": "images/jira48.png",
+             "128": "images/jira128.png" },
   "permissions": [
     "storage"
   ],
@@ -10,25 +10,20 @@
     "scripts": ["background.js"],
     "persistent": false
   },
-
-
-
-    "name": "JIRA on Steroid",
-    "version": "5.0.7",
-    "options_page": "options.html",
-    "content_scripts": [
-        {
-            "matches": ["https://jira.intuit.com/*", "https://github.com/live-community/live_community/pull*"],
-            "css": ["lc-jira-color.css"],
-            "js": ["lib/base64.js", "lib/underscore-min.js", "github.js", "jquery.js", "utils.js", "jira_github.js", "intuit.js", "content_script.js"]
-        }
-    ],
-
-    "browser_action": {
-        "default_icon": "images/icon.png",
-        "default_popup": "popup.html"
-    },
-
+  "name": "JIRA on Steroid",
+  "version": "5.1",
+  "options_page": "options.html",
+  "content_scripts": [
+    {
+      "matches": ["https://jira.intuit.com/*", "https://github.com/live-community/live_community/pull*", "https://github.intuit.com/"],
+      "css": ["lc-jira-color.css"],
+      "js": ["lib/base64.js", "lib/underscore-min.js", "github.js", "jquery.js", "utils.js", "jira_github.js", "intuit.js", "content_script.js"]
+    }
+  ],
+  "browser_action": {
+    "default_icon": "images/icon.png",
+    "default_popup": "popup.html"
+  },
   "web_accessible_resources": [
       "images/web.png",
       "images/web2.png",
@@ -48,7 +43,6 @@
       "images/watching.png",
       "images/users.png",
       "images/component.png",
-      "images/checkbox.png",
       "script.js"
   ],
   "manifest_version": 2

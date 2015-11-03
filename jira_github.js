@@ -203,11 +203,13 @@ function getBaseRC(tags){
     var rcDate, rcSha;
     for(var i=0; i<tags.length; i++){
         var found = tags[i]['name'].match(/RC-(\d*)-(\d*)-(\d*)(\.\d)*/);
-        rcDate = (new Date(found[1] , found[2] - 1 , found[3]));
-        // console.log(rcDate + (twoWeeksAgo > rcDate));
-        if(twoWeeksAgo > rcDate) {
-            rcSha = tags[i]['commit']['sha']
-            break;
+        if(found){
+            rcDate = (new Date(found[1] , found[2] - 1 , found[3]));
+            // console.log(rcDate + (twoWeeksAgo > rcDate));
+            if(twoWeeksAgo > rcDate) {
+                rcSha = tags[i]['commit']['sha']
+                break;
+            }
         }
     }
 

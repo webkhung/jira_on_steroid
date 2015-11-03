@@ -17,69 +17,22 @@ var hasGithub;
 var releaseIssues = [];
 
 if(window.location.href.indexOf('RapidBoard') > 0) {
-    setupDocument();
-
-    chrome.runtime.sendMessage({method: "getLocalStorage", key: "settings"}, function(response) {
-        localStorageSet = true;
-        hasGithub = jiraGithub.initVariables(response);
-        watchersNames = response.watchersNames;
-        hoverDescription = response.hoverDescription == 'true';
-        showLastComment = response.lastComment == 'true';
-        relatedCards = response.relatedCards == 'true';
-        fixVersion = response.fixVersion == 'true';
-    });
-
-    // go will be an event sent from the document when call window.go()
-    document.addEventListener("go", function(data) {
-        updateJiraBoard();
-    });
-
-    document.addEventListener("loadPlugin", function(data) {
-        loadPlugin();
-    });
-
-    setTimeoutLoadPlugin = setTimeout(function(){
-        loadPlugin();
-    }, 4000);
+    setupRapidBoard();
 }
 else if(window.location.href.indexOf('browse') > 0){
-
-    // Inject script.js to the document
-    var s = document.createElement('script');
-    s.src = chrome.extension.getURL('script.js');
-    (document.head||document.documentElement).appendChild(s);
-    s.onload = function() {
-        s.parentNode.removeChild(s);
-    };
-
-    $('body').append("<div class='hovercard'></div>");
-    $('body').append("<div id='intu-menu'></div>");
-
-    chrome.runtime.sendMessage({method: "getLocalStorage", key: "settings"}, function(response) {
-        localStorageSet = true;
-        hasGithub = jiraGithub.initVariables(response);
-        watchersNames = response.watchersNames;
-        hoverDescription = response.hoverDescription == 'true';
-        showLastComment = response.lastComment == 'true';
-        relatedCards = response.relatedCards == 'true';
-        fixVersion = response.fixVersion == 'true';
-    });
-
-    addPluginMenu();
-
-    var script = document.createElement('script');
-    script.appendChild(document.createTextNode('('+ setupBrowsePageEvent +')();'));
-    (document.body || document.head || document.documentElement).appendChild(script);
+    setupIssuePage();
 }
 else {
     jiraGithub.setIntervalChangeGithubPage();
 }
 
-function setupBrowsePageEvent(){
-    setInterval(function(){checkACBrowse()}, 2000);
+function setupIssuePage(){
+    appendScriptsToPage();
+    getLocalStorage();
+    addPluginMenu();
 }
 
-function setupDocument(){
+function setupRapidBoard(){
     // Inject Js to document
     var script = document.createElement('script');
     script.appendChild(document.createTextNode('('+ setupClientLoadPluginEvent +')();'));
@@ -98,15 +51,6 @@ function setupDocument(){
     }
     head.appendChild(style);
 
-    // Inject script.js to the document
-    var s = document.createElement('script');
-    s.src = chrome.extension.getURL('script.js');
-    (document.head||document.documentElement).appendChild(s);
-    s.onload = function() {
-        s.parentNode.removeChild(s);
-    };
-
-
     // Hide buttons / filters on the board are clicked.
     $('#work-toggle, #plan-toggle').on('click', function(){
         $('#intu-status-issues').html('');
@@ -114,10 +58,25 @@ function setupDocument(){
         $('#intu-menu-load').show();
     });
 
-    $('body').append("<div class='hovercard'></div>");
-    $('body').append("<div id='intu-menu'></div>");
+    appendScriptsToPage();
+
+    getLocalStorage();
+
+    // go will be an event sent from the document when call window.go()
+    document.addEventListener("go", function(data) {
+        updateJiraBoard();
+    });
+
+    document.addEventListener("loadPlugin", function(data) {
+        loadPlugin();
+    });
+
+    setTimeoutLoadPlugin = setTimeout(function(){
+        loadPlugin();
+    }, 4000);
 }
 
+// Called whenever Jira refreshes the page or when the board is ready initially
 function loadPlugin(){
     clearTimeout(setTimeoutLoadPlugin);
 
@@ -169,8 +128,6 @@ function setupClientLoadPluginEvent() {
         $(window).resize(function() {
             setTimeout(function(){pluginAdjustSpace()}, 1000);
         });
-
-//        setInterval(function(){checkACPopup()}, 2000);
     }, 4000);
 
     console.yo = console.log;
@@ -327,7 +284,7 @@ function addPluginMenu(){
     var sorts = {
         label:        { id: 'sortLabel', image: "images/label.png", title: "Sort by labels", attr: "_label", order: "desc", valueType: "string" },
         assignee:     { id: 'sortAssignee', image: "images/assignee.png", title: "Sort by assignees", attr: "_displayName", order: "asc", valueType: "string" }
-//        story_points: { image: "images/story_points.png", title: "Sort by story points", attr: "_storyPoint", order: "desc", valueType: "integer" },
+        // story_points: { image: "images/story_points.png", title: "Sort by story points", attr: "_storyPoint", order: "desc", valueType: "integer" },
     }
     for(var sortKey in sorts) {
         sort = sorts[sortKey];
@@ -335,34 +292,25 @@ function addPluginMenu(){
         var anchor = $('<a />').attr({ id: sort['id'], title: sort['title'], class: 'sort-icon masterTooltip', href: "javascript:window.sortAllJiraIssues('" + sort['attr'] + "', '" + sort['order'] + "', '" + sort['valueType'] + "')" });
         $('#intu-side-menu').append(anchor.append(img));
     };
-    $('#intu-side-menu').append("\
-        <a href='javascript:pluginShowComponentFilter();' id='componentFilter' title='Component Filters' class='masterTooltip'><img width=16 height=16 src=" + chrome.extension.getURL('images/component.png') + "></a>  \
-        <a href='javascript:pluginShowUserFilter();' id='userFilter' title='User Filters' class='masterTooltip'><img width=16 height=16 src=" + chrome.extension.getURL('images/users.png') + "></a>  \
-        <a href='javascript:pluginToggleStatus();' title='Issue Status' class='masterTooltip'><img width=16 height=16 src=" + chrome.extension.getURL('images/status.png') + "></a>  \
-        <a id='pluginMentionCount' href='javascript:pluginMention();' title='You are mentioned' class='masterTooltip'></a>\
-        "
-    );
-
-    $('#intu-side-menu').append("<a href='javascript:pluginRelease();' id='release' title='Release Notes' class='masterTooltip'><img width=16 height=16 src=" + chrome.extension.getURL('images/notes.png') + "></a>");
-
-
-    if(window.location.href.indexOf('browse') > 0) {
-        $('#intu-side-menu').append("<a href='javascript:convertToCheckboxesBrowse();' id='checklist' title='Convert to AC to Checklist' class='masterTooltip'><img width=16 height=16 src=" + chrome.extension.getURL('images/checkbox.png') + "></a>");
-    }
-    else {
-        $('#intu-side-menu').append("<a href='javascript:convertToCheckboxesPopup();' id='checklist' title='Convert to AC to Checklist' class='masterTooltip'><img width=16 height=16 src=" + chrome.extension.getURL('images/checkbox.png') + "></a>");
-    }
-
-    $('#intu-side-menu').append("<div id='intu-mention'></div>")
-    $('#intu-side-menu').append("\
-        <div id='intu-filter-components' class='intu-container'><strong>Filter By Component:</strong> <a href='javascript:pluginClearFilter()' style='color:red'>Clear Filter</a> </div> \
-        <div id='intu-filter-users' class='intu-container'><strong>Filter By Assignee:</strong> <a href='javascript:pluginClearFilter()' style='color:red'>Clear Filter</a> </div> \
-        <div id='intu-status'>  \
-            <div id='num-of-issues'><strong># of Issues : </strong><span id='intu-status-issues'></span></div>  \
-            <div id='num-of-points'><strong># of Story Pts : </strong><span id='intu-status-points'></span></div>  \
-        </div>  \
-        "
-    );
+    $('#intu-side-menu')
+        .append("\
+            <a href='javascript:pluginShowComponentFilter();' id='componentFilter' title='Component Filters' class='masterTooltip'><img width=16 height=16 src=" + chrome.extension.getURL('images/component.png') + "></a>  \
+            <a href='javascript:pluginShowUserFilter();' id='userFilter' title='User Filters' class='masterTooltip'><img width=16 height=16 src=" + chrome.extension.getURL('images/users.png') + "></a>  \
+            <a href='javascript:pluginToggleStatus();' title='Issue Status' class='masterTooltip'><img width=16 height=16 src=" + chrome.extension.getURL('images/status.png') + "></a>  \
+            <a id='pluginMentionCount' href='javascript:pluginMention();' title='You are mentioned' class='masterTooltip'></a>")
+        .append("<a href='javascript:pluginRelease();' id='release' title='Release Notes' class='masterTooltip'><img width=16 height=16 src=" + chrome.extension.getURL('images/notes.png') + "></a>")
+        .append("<div id='intu-mention'></div>")
+        .append("\
+            <div id='intu-filter-components' class='intu-container'> \
+                <a href='javascript:pluginClose();' class='close-button'>Close</a>\
+                <strong>Filter By Component:</strong> <a href='javascript:pluginClearFilter()' style='color:red'>Clear Filter</a> </div> \
+            <div id='intu-filter-users' class='intu-container'> \
+                <a href='javascript:pluginClose();' class='close-button'>Close</a>\
+                <strong>Filter By Assignee:</strong> <a href='javascript:pluginClearFilter()' style='color:red'>Clear Filter</a></div> \
+            <div id='intu-status'>  \
+                <a href='javascript:pluginClose();' class='close-button'>Close</a>\
+                <div id='num-of-issues'><strong># of Issues : </strong><span id='intu-status-issues'></span></div>  \
+                <div id='num-of-points'><strong># of Story Pts : </strong><span id='intu-status-points'></span></div></div>");
 
     if(hasGithub){
         $('#intu-side-menu').append("<div id='intu-github'><div id='placeholder'></div></div>")
@@ -761,4 +709,29 @@ $.fn.hovercard = function(options) {
             }
         }
     );
+}
+
+function getLocalStorage(){
+    chrome.runtime.sendMessage({method: "getLocalStorage", key: "settings"}, function(response) {
+        localStorageSet = true;
+        hasGithub = jiraGithub.initVariables(response);
+        watchersNames = response.watchersNames;
+        hoverDescription = response.hoverDescription == 'true';
+        showLastComment = response.lastComment == 'true';
+        relatedCards = response.relatedCards == 'true';
+        fixVersion = response.fixVersion == 'true';
+    });
+}
+
+function appendScriptsToPage(){
+    // Inject script.js to the document
+    var s = document.createElement('script');
+    s.src = chrome.extension.getURL('script.js');
+    (document.head||document.documentElement).appendChild(s);
+    s.onload = function() {
+        s.parentNode.removeChild(s);
+    };
+
+    $('body').append("<div class='hovercard'></div>");
+    $('body').append("<div id='intu-menu'></div>");
 }

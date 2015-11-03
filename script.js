@@ -265,17 +265,17 @@ function convertToCheckboxesPopup(){
 }
 
 function pluginShowUserFilter(){
-    $('#intu-status, #intu-release, #intu-filter-components, #intu-mention, #intu-github').hide();
+    pluginClose();
     $('#intu-filter-users').toggle();
 }
 
 function pluginShowComponentFilter(){
-    $('#intu-status, #intu-release, #intu-filter-users, #intu-mention, #intu-github').hide();
+    pluginClose();
     $('#intu-filter-components').toggle();
 }
 
 function pluginMention(){
-    $('#intu-status, #intu-release, #intu-filter-users, #intu-filter-components, #intu-github').hide();
+    pluginClose();
     $('#intu-mention').toggle();
 }
 
@@ -293,4 +293,8 @@ function pluginFilterComponent(name){
 
 function pluginClearFilter(){
     $('.ghx-issue, .ghx-issue-compact').show();
+}
+
+function pluginClose(){
+    $('#intu-side-menu > div').hide();
 }

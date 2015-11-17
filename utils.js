@@ -102,6 +102,17 @@ function addUserFilter(displayName){
     }
 }
 
+function addProprityFilter(name){
+    if($(".intu-filter-priority[_displayName='" + name + "']").length == 0){
+        var link = $('<a />').attr({
+            class: 'intu-filter-priority',
+            href: "javascript:pluginFilterPriority('" + name + "')",
+            _displayName: name
+        }).text(name);
+        $('#intu-filter-priorities').append(link);
+    }
+}
+
 function issueLinkJsHtml(issueKey, cssClass){
     var anchor = $('<a />').attr({
         href: "javascript:void(0);",

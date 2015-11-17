@@ -269,6 +269,11 @@ function pluginShowUserFilter(){
     $('#intu-filter-users').toggle();
 }
 
+function pluginShowPriorityFilter(){
+    pluginClose();
+    $('#intu-filter-priorities').toggle();
+}
+
 function pluginShowComponentFilter(){
     pluginClose();
     $('#intu-filter-components').toggle();
@@ -283,6 +288,12 @@ function pluginFilterUser(name){
     $('.ghx-issue, .ghx-issue-compact').hide();
     $(".ghx-issue[_displayName='" + name + "']").show();
     $(".ghx-issue-compact[_displayName='" + name + "']").show();
+}
+
+function pluginFilterPriority(name){
+    $('.ghx-issue, .ghx-issue-compact').hide();
+    $(".ghx-issue[_priority='" + name + "']").show();
+    $(".ghx-issue-compact[_priority='" + name + "']").show();
 }
 
 function pluginFilterComponent(name){

@@ -4,8 +4,8 @@ var baseUrl = documentUrl.substring(0, documentUrl.indexOf('/secure/'));
 var hoverDescription, showLastComment, relatedCards, fixVersion;
 var statusCounts = {};
 var statusStoryPoints = {};
-var workFields = "&maxResults=1000&fields=key,created,updated,status,summary,description,parent,labels,subtasks,assignee,issuelinks,fixVersions,comment,components," + storyPointsField + extraFields;
-var planFields = "&maxResults=1000&fields=key,created,updated,status,summary,description,parent,labels,subtasks,assignee,issuelinks,fixVersions,comment,components" + planExtraFields;
+var workFields = "&maxResults=1000&fields=key,priority,created,updated,status,summary,description,parent,labels,subtasks,assignee,issuelinks,fixVersions,comment,components," + storyPointsField + extraFields;
+var planFields = "&maxResults=1000&fields=key,priority,created,updated,status,summary,description,parent,labels,subtasks,assignee,issuelinks,fixVersions,comment,components" + planExtraFields;
 var planIssueQuery = " and issuetype in standardIssueTypes() and ((sprint is empty and resolutiondate is empty) or sprint in openSprints() or sprint in futureSprints())"
 var workIssueQuery = " and (sprint in openSprints())";
 var kanbanIssueQuery = "";
@@ -296,6 +296,7 @@ function addPluginMenu(){
         .append("\
             <a href='javascript:pluginShowComponentFilter();' id='componentFilter' title='Component Filters' class='masterTooltip'><img width=16 height=16 src=" + chrome.extension.getURL('images/component.png') + "></a>  \
             <a href='javascript:pluginShowUserFilter();' id='userFilter' title='User Filters' class='masterTooltip'><img width=16 height=16 src=" + chrome.extension.getURL('images/users.png') + "></a>  \
+            <a href='javascript:pluginShowPriorityFilter();' id='priorityFilter' title='Priority Filters' class='masterTooltip'><img width=16 height=16 src=" + chrome.extension.getURL('images/priority2.png') + "></a>  \
             <a href='javascript:pluginToggleStatus();' title='Issue Status' class='masterTooltip'><img width=16 height=16 src=" + chrome.extension.getURL('images/status.png') + "></a>  \
             <a id='pluginMentionCount' href='javascript:pluginMention();' title='You are mentioned' class='masterTooltip'></a>")
         .append("<a href='javascript:pluginRelease();' id='release' title='Release Notes' class='masterTooltip'><img width=16 height=16 src=" + chrome.extension.getURL('images/notes.png') + "></a>")
@@ -307,6 +308,9 @@ function addPluginMenu(){
             <div id='intu-filter-users' class='intu-container'> \
                 <a href='javascript:pluginClose();' class='close-button'>Close</a>\
                 <strong>Filter By Assignee:</strong> <a href='javascript:pluginClearFilter()' style='color:red'>Clear Filter</a></div> \
+            <div id='intu-filter-priorities' class='intu-container'> \
+                <a href='javascript:pluginClose();' class='close-button'>Close</a>\
+                <strong>Filter By Priorities:</strong> <a href='javascript:pluginClearFilter()' style='color:red'>Clear Filter</a></div> \
             <div id='intu-status'>  \
                 <a href='javascript:pluginClose();' class='close-button'>Close</a>\
                 <div id='num-of-issues'><strong># of Issues : </strong><span id='intu-status-issues'></span></div>  \
@@ -354,6 +358,9 @@ function addAttributesTo(elIssue, fields, issueIsPR){
     var displayName = 'Unassigned';
     if (fields.assignee) displayName = fields.assignee.displayName;
 
+    var priority = ''
+    if (fields.priority) priority = fields.priority.name;
+
     var label = "";
     if (issueIsPR) label = "Pull Request";
 
@@ -379,9 +386,13 @@ function addAttributesTo(elIssue, fields, issueIsPR){
     elIssue.attr('_storyPoint', storyPoint);
     elIssue.attr('_label', label);
     elIssue.attr('_watchers', watchers);
+    elIssue.attr('_priority', priority);
 
     // Add name filter
     addUserFilter(displayName);
+
+    // Add priority filter
+    addProprityFilter(priority);
 
     if(fields.components){
         for(var i=0; i<fields.components.length; i++){

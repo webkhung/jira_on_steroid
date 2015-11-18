@@ -91,7 +91,7 @@
     color: red;
 }
 
-#intu-status, #intu-release, #intu-filter-users, #intu-filter-priorities, #intu-mention, #intu-filter-components {
+#intu-status, #intu-release, #intu-filter-users, #intu-filter-priorities, #intu-filter-fixversion, #intu-mention, #intu-filter-components {
     display: none;
     position: absolute;
     width: 500px;
@@ -124,7 +124,7 @@
 
 #intu-menu-toggle { font-weight: bold; }
 
-.intu-filter-user, .intu-filter-priority, .intu-filter-component { padding: 0 5px; }
+.intu-filter-user, .intu-filter-priority, .intu-filter-fixversion,  .intu-filter-component { padding: 0 5px; }
 
 .intu-filter-new-user { color: rgb(239, 4, 255) !important; }
 

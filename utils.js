@@ -102,7 +102,7 @@ function addUserFilter(displayName){
     }
 }
 
-function addProprityFilter(name){
+function addPriorityFilter(name){
     if($(".intu-filter-priority[_displayName='" + name + "']").length == 0){
         var link = $('<a />').attr({
             class: 'intu-filter-priority',
@@ -110,6 +110,17 @@ function addProprityFilter(name){
             _displayName: name
         }).text(name);
         $('#intu-filter-priorities').append(link);
+    }
+}
+
+function addFixVersionFilter(name){
+    if($(".intu-filter-fixversion[_displayName='" + name + "']").length == 0){
+        var link = $('<a />').attr({
+            class: 'intu-filter-fixversion',
+            href: "javascript:pluginFilterFixVersion('" + name + "')",
+            _displayName: name
+        }).text(name);
+        $('#intu-filter-fixversion').append(link);
     }
 }
 

@@ -297,6 +297,7 @@ function addPluginMenu(){
             <a href='javascript:pluginShowComponentFilter();' id='componentFilter' title='Component Filters' class='masterTooltip'><img width=16 height=16 src=" + chrome.extension.getURL('images/component.png') + "></a>  \
             <a href='javascript:pluginShowUserFilter();' id='userFilter' title='User Filters' class='masterTooltip'><img width=16 height=16 src=" + chrome.extension.getURL('images/users.png') + "></a>  \
             <a href='javascript:pluginShowPriorityFilter();' id='priorityFilter' title='Priority Filters' class='masterTooltip'><img width=16 height=16 src=" + chrome.extension.getURL('images/priority2.png') + "></a>  \
+            <a href='javascript:pluginShowFixVersionFilter();' id='fixversionFilter' title='FixVersion Filters' class='masterTooltip'><img width=16 height=16 src=" + chrome.extension.getURL('images/priority2.png') + "></a>  \
             <a href='javascript:pluginToggleStatus();' title='Issue Status' class='masterTooltip'><img width=16 height=16 src=" + chrome.extension.getURL('images/status.png') + "></a>  \
             <a id='pluginMentionCount' href='javascript:pluginMention();' title='You are mentioned' class='masterTooltip'></a>")
         .append("<a href='javascript:pluginRelease();' id='release' title='Release Notes' class='masterTooltip'><img width=16 height=16 src=" + chrome.extension.getURL('images/notes.png') + "></a>")
@@ -311,6 +312,9 @@ function addPluginMenu(){
             <div id='intu-filter-priorities' class='intu-container'> \
                 <a href='javascript:pluginClose();' class='close-button'>Close</a>\
                 <strong>Filter By Priorities:</strong> <a href='javascript:pluginClearFilter()' style='color:red'>Clear Filter</a></div> \
+            <div id='intu-filter-fixversion' class='intu-container'> \
+                <a href='javascript:pluginClose();' class='close-button'>Close</a>\
+                <strong>Filter By Fix Versions:</strong> <a href='javascript:pluginClearFilter()' style='color:red'>Clear Filter</a></div> \
             <div id='intu-status'>  \
                 <a href='javascript:pluginClose();' class='close-button'>Close</a>\
                 <div id='num-of-issues'><strong># of Issues : </strong><span id='intu-status-issues'></span></div>  \
@@ -358,8 +362,17 @@ function addAttributesTo(elIssue, fields, issueIsPR){
     var displayName = 'Unassigned';
     if (fields.assignee) displayName = fields.assignee.displayName;
 
-    var priority = ''
+    var priority = '';
     if (fields.priority) priority = fields.priority.name;
+
+    var fixVersions = '';
+    if (fields.fixVersions) {
+        console.log(fields.fixVersions)
+        for (var i=0; i < fields.fixVersions.length; i++){
+            var fixVersionName = fields.fixVersions[i].name;
+            fixVersions += (fixVersionName + ",");
+        }
+    }
 
     var label = "";
     if (issueIsPR) label = "Pull Request";
@@ -387,12 +400,16 @@ function addAttributesTo(elIssue, fields, issueIsPR){
     elIssue.attr('_label', label);
     elIssue.attr('_watchers', watchers);
     elIssue.attr('_priority', priority);
+    elIssue.attr('_fixVersion', fixVersions);
 
     // Add name filter
     addUserFilter(displayName);
 
     // Add priority filter
-    addProprityFilter(priority);
+    addPriorityFilter(priority);
+
+    //Add fix version filter
+    addFixVersionFilter(fixVersions);
 
     if(fields.components){
         for(var i=0; i<fields.components.length; i++){

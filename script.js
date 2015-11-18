@@ -274,6 +274,11 @@ function pluginShowPriorityFilter(){
     $('#intu-filter-priorities').toggle();
 }
 
+function pluginShowFixVersionFilter(){
+    pluginClose();
+    $('#intu-filter-fixversion').toggle();
+}
+
 function pluginShowComponentFilter(){
     pluginClose();
     $('#intu-filter-components').toggle();
@@ -294,6 +299,12 @@ function pluginFilterPriority(name){
     $('.ghx-issue, .ghx-issue-compact').hide();
     $(".ghx-issue[_priority='" + name + "']").show();
     $(".ghx-issue-compact[_priority='" + name + "']").show();
+}
+
+function pluginFilterFixVersion(name){
+    $('.ghx-issue, .ghx-issue-compact').hide();
+    $(".ghx-issue[_fixVersion='" + name + "']").show();
+    $(".ghx-issue-compact[_fixVersion='" + name + "']").show();
 }
 
 function pluginFilterComponent(name){

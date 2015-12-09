@@ -124,6 +124,17 @@ function addFixVersionFilter(name){
     }
 }
 
+function addIssueTypeFilter(name){
+    if($(".intu-filter-issuetype[_displayName='" + name + "']").length == 0){
+        var link = $('<a />').attr({
+            class: 'intu-filter-issuetype',
+            href: "javascript:pluginFilterIssuetype('" + name + "')",
+            _displayName: name
+        }).text(name);
+        $('#intu-filter-issuetype').append(link);
+    }
+}
+
 function issueLinkJsHtml(issueKey, cssClass){
     var anchor = $('<a />').attr({
         href: "javascript:void(0);",

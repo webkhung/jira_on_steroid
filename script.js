@@ -279,6 +279,11 @@ function pluginShowFixVersionFilter(){
     $('#intu-filter-fixversion').toggle();
 }
 
+function pluginShowIssuetypeFilter(){
+    pluginClose();
+    $('#intu-filter-issuetype').toggle();
+}
+
 function pluginShowComponentFilter(){
     pluginClose();
     $('#intu-filter-components').toggle();
@@ -305,6 +310,12 @@ function pluginFilterFixVersion(name){
     $('.ghx-issue, .ghx-issue-compact').hide();
     $(".ghx-issue[_fixVersion='" + name + "']").show();
     $(".ghx-issue-compact[_fixVersion='" + name + "']").show();
+}
+
+function pluginFilterIssuetype(name){
+    $('.ghx-issue, .ghx-issue-compact').hide();
+    $(".ghx-issue[_issuetype='" + name + "']").show();
+    $(".ghx-issue-compact[_issuetype='" + name + "']").show();
 }
 
 function pluginFilterComponent(name){

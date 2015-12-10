@@ -4,8 +4,8 @@ var baseUrl = documentUrl.substring(0, documentUrl.indexOf('/secure/'));
 var hoverDescription, showLastComment, relatedCards, fixVersion;
 var statusCounts = {};
 var statusStoryPoints = {};
-var workFields = "&maxResults=1000&fields=key,priority,created,updated,status,summary,description,parent,labels,subtasks,assignee,issuelinks,fixVersions,comment,components," + storyPointsField + extraFields;
-var planFields = "&maxResults=1000&fields=key,priority,created,updated,status,summary,description,parent,labels,subtasks,assignee,issuelinks,fixVersions,comment,components" + planExtraFields;
+var workFields = "&maxResults=1000&fields=key,priority,created,updated,status,summary,description,parent,labels,subtasks,assignee,issuelinks,fixVersions,comment,components,issuetype," + storyPointsField + extraFields;
+var planFields = "&maxResults=1000&fields=key,priority,created,updated,status,summary,description,parent,labels,subtasks,assignee,issuelinks,fixVersions,comment,components,issuetype," + planExtraFields;
 var planIssueQuery = " and issuetype in standardIssueTypes() and ((sprint is empty and resolutiondate is empty) or sprint in openSprints() or sprint in futureSprints())"
 var workIssueQuery = " and (sprint in openSprints())";
 var kanbanIssueQuery = "";
@@ -164,6 +164,7 @@ function processIssues(data){
         var issueIsPR = jiraGithub.addPullRequestLabel(issue.key, elIssue);
         addHovercardTo(elIssue, fields, issue.key);
         addUserFilter('Unassigned');
+        addIssueTypeFilter('Hide all sub-tasks');
         addLabelTo(elIssue, createLabelFrom(fields.labels, issueIsPR, elIssue), 'top-right');
         addAttributesTo(elIssue, fields, issueIsPR);
         addOpenIssueLinkTo(elIssue, issue.key);
@@ -298,6 +299,7 @@ function addPluginMenu(){
             <a href='javascript:pluginShowUserFilter();' id='userFilter' title='User Filters' class='masterTooltip'><img width=16 height=16 src=" + chrome.extension.getURL('images/users.png') + "></a>  \
             <a href='javascript:pluginShowPriorityFilter();' id='priorityFilter' title='Priority Filters' class='masterTooltip'><img width=16 height=16 src=" + chrome.extension.getURL('images/priority2.png') + "></a>  \
             <a href='javascript:pluginShowFixVersionFilter();' id='fixversionFilter' title='FixVersion Filters' class='masterTooltip'><img width=16 height=16 src=" + chrome.extension.getURL('images/fixversion.png') + "></a>  \
+            <a href='javascript:pluginShowIssuetypeFilter();' id='issuetypeFilter' title='Issuetype Filters' class='masterTooltip'><img width=16 height=16 src=" + chrome.extension.getURL('images/priority2.png') + "></a>  \
             <a href='javascript:pluginToggleStatus();' title='Issue Status' class='masterTooltip'><img width=16 height=16 src=" + chrome.extension.getURL('images/status.png') + "></a>  \
             <a id='pluginMentionCount' href='javascript:pluginMention();' title='You are mentioned' class='masterTooltip'></a>")
         .append("<a href='javascript:pluginRelease();' id='release' title='Release Notes' class='masterTooltip'><img width=16 height=16 src=" + chrome.extension.getURL('images/notes.png') + "></a>")
@@ -315,6 +317,9 @@ function addPluginMenu(){
             <div id='intu-filter-fixversion' class='intu-container'> \
                 <a href='javascript:pluginClose();' class='close-button'>Close</a>\
                 <strong>Filter By Fix Versions:</strong> <a href='javascript:pluginClearFilter()' style='color:red'>Clear Filter</a></div> \
+            <div id='intu-filter-issuetype' class='intu-container'>  \
+                <a href='javascript:pluginClose();' class='close-button'>Close</a>\
+                <strong>Filter By Issue Types:</strong> <a href='javascript:pluginClearFilter()' style='color:red'>Clear Filter</a></div> \
             <div id='intu-status'>  \
                 <a href='javascript:pluginClose();' class='close-button'>Close</a>\
                 <div id='num-of-issues'><strong># of Issues : </strong><span id='intu-status-issues'></span></div>  \
@@ -365,6 +370,10 @@ function addAttributesTo(elIssue, fields, issueIsPR){
     var priority = '';
     if (fields.priority) priority = fields.priority.name;
 
+    var issuetype = '';
+    if (fields.issuetype) issuetype = fields.issuetype.name;
+    console.log(fields.issuetype.name)
+
     var fixVersions = '';
     if (fields.fixVersions) {
         console.log(fields.fixVersions)
@@ -401,6 +410,7 @@ function addAttributesTo(elIssue, fields, issueIsPR){
     elIssue.attr('_watchers', watchers);
     elIssue.attr('_priority', priority);
     elIssue.attr('_fixVersion', fixVersions);
+    elIssue.attr('_issuetype', issuetype);
 
     // Add name filter
     addUserFilter(displayName);
@@ -410,6 +420,9 @@ function addAttributesTo(elIssue, fields, issueIsPR){
 
     //Add fix version filter
     addFixVersionFilter(fixVersions);
+
+    //Add the issuetype filter
+    addIssueTypeFilter(issuetype);
 
     if(fields.components){
         for(var i=0; i<fields.components.length; i++){

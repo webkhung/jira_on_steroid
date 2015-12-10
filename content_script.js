@@ -300,7 +300,7 @@ function addPluginMenu(){
             <a href='javascript:pluginShowUserFilter();' id='userFilter' title='User Filters' class='masterTooltip'><img width=16 height=16 src=" + chrome.extension.getURL('images/users.png') + "></a>  \
             <a href='javascript:pluginShowPriorityFilter();' id='priorityFilter' title='Priority Filters' class='masterTooltip'><img width=16 height=16 src=" + chrome.extension.getURL('images/priority2.png') + "></a>  \
             <a href='javascript:pluginShowFixVersionFilter();' id='fixversionFilter' title='FixVersion Filters' class='masterTooltip'><img width=16 height=16 src=" + chrome.extension.getURL('images/fixversion.png') + "></a>  \
-            <a href='javascript:pluginShowIssuetypeFilter();' id='issuetypeFilter' title='Issuetype Filters' class='masterTooltip'><img width=16 height=16 src=" + chrome.extension.getURL('images/priority2.png') + "></a>  \
+            <a href='javascript:pluginShowIssuetypeFilter();' id='issuetypeFilter' title='Issuetype Filters' class='masterTooltip'><img width=16 height=16 src=" + chrome.extension.getURL('images/story_points.png') + "></a>  \
             <a href='javascript:pluginToggleStatus();' title='Issue Status' class='masterTooltip'><img width=16 height=16 src=" + chrome.extension.getURL('images/status.png') + "></a>  \
             <a id='pluginMentionCount' href='javascript:pluginMention();' title='You are mentioned' class='masterTooltip'></a>")
         .append("<a href='javascript:pluginRelease();' id='release' title='Release Notes' class='masterTooltip'><img width=16 height=16 src=" + chrome.extension.getURL('images/notes.png') + "></a>")

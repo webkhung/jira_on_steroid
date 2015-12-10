@@ -11,7 +11,7 @@
     "persistent": false
   },
   "name": "JIRA on Steroid",
-  "version": "5.4",
+  "version": "5.4.1",
   "options_page": "options.html",
   "content_scripts": [
     {

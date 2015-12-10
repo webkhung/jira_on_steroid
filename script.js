@@ -313,9 +313,16 @@ function pluginFilterFixVersion(name){
 }
 
 function pluginFilterIssuetype(name){
-    $('.ghx-issue, .ghx-issue-compact').hide();
-    $(".ghx-issue[_issuetype='" + name + "']").show();
-    $(".ghx-issue-compact[_issuetype='" + name + "']").show();
+    if(name == 'Hide all sub-tasks'){
+        $('.ghx-issue, .ghx-issue-compact').show();
+        $(".ghx-issue[_issuetype='Sub-task']").hide();
+        $(".ghx-issue-compact[_issuetype='Sub-task']").hide();
+    }
+    else {
+        $('.ghx-issue, .ghx-issue-compact').hide();
+        $(".ghx-issue[_issuetype='" + name + "']").show();
+        $(".ghx-issue-compact[_issuetype='" + name + "']").show();
+    }
 }
 
 function pluginFilterComponent(name){

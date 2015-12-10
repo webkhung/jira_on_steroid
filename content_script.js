@@ -15,6 +15,7 @@ var workColumnStatuses = {}
 var setTimeoutLoadPlugin;
 var hasGithub;
 var releaseIssues = [];
+var rapidViewID;
 
 if(window.location.href.indexOf('RapidBoard') > 0) {
     setupRapidBoard();
@@ -190,11 +191,11 @@ function processIssues(data){
 function updateJiraBoard() {
     console.log('updateJiraBoard');
 
+    var sprintID = param('sprint');
+    rapidViewID = param('rapidView');
+
     addPluginMenu();
     resetIssueStatus();
-
-    var sprintID = param('sprint');
-    var rapidViewID = param('rapidView');
 
     if (sprintID.length == 0 && rapidViewID.length == 0) {
         updateLoadStatus('Not a RapidBoard Url');
@@ -275,7 +276,7 @@ function addPluginMenu(){
     $('body').append("<div id='intu-side-menu'></div>");
     $('#intu-side-menu').append("<a href='javascript:pluginMaxSpace();' title='Maximize Space' class='masterTooltip'><img width=16 height=16 src=" + chrome.extension.getURL('images/max.png') + "></a>");
 
-    if(hasGithub){
+    if(hasGithub && rapidViewID == 7690){
         $('#intu-side-menu').append("<a href='javascript:pluginShowGithubDashboard();' id='githubDashboard' title='Github Dashboard' class='masterTooltip'><img width=16 height=16 src=" + chrome.extension.getURL('images/github.png') + "></a>");
     }
 
@@ -325,9 +326,14 @@ function addPluginMenu(){
                 <div id='num-of-issues'><strong># of Issues : </strong><span id='intu-status-issues'></span></div>  \
                 <div id='num-of-points'><strong># of Story Pts : </strong><span id='intu-status-points'></span></div></div>");
 
-    if(hasGithub){
+    if(hasGithub && rapidViewID == 7690){
         $('#intu-side-menu').append("<div id='intu-github'><div id='placeholder'></div></div>")
     }
+
+    if(rapidViewID != 7690) {
+        $('#intu-side-menu #release').css('display', 'none');
+    }
+
 
     $('.masterTooltip').hover(function(){
         var title = $(this).attr('title');

@@ -46,8 +46,8 @@
     padding: 7px 4px;
     border: 1px solid #333;
     position: absolute;
-    top: 265px;
-    right: 10px;
+    top: 50px;
+    right: 1px;
     background-color: #FFD738;
     z-index: 100000;
     font-size: 13px;
@@ -108,7 +108,7 @@
     display: none;
     position: absolute;
     width: 900px;
-    top: -250px;
+    top: -45px;
     right: 33px;
     padding: 10px;
     border: 1px solid black;
@@ -171,6 +171,7 @@
     color:#fff;
     font-size:12px;
     right: 33px;
+    z-index: 100000;
 }
 
 .columnStatus {

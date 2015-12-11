@@ -64,7 +64,7 @@ function JiraGithub(){
                 var tags = tmp[1];
                 repo.getRef('heads/master', function(err, headSHA) {
                     repo.compare(baseSHA, headSHA, function(err, commits){
-                        console.log('Base (Oldest) SHA'  + baseSHA + '--- Head SHA' + headSHA);
+                        // console.log('Base (Oldest) SHA'  + baseSHA + '--- Head SHA' + headSHA);
                         commitsStatus = new CommitsStatus(baseSHA, headSHA);
                         commitsStatus.tags = tags;
                         master(commits, headSHA);
@@ -149,10 +149,10 @@ function addEnvLabelToCard(){
 }
 
 function checkCommitsStatus(){
-    console.log('checking......');
+    // console.log('checking......');
     if (commitsStatus && commitsStatus.envStatus.length == ALL_ENVS.length + 1){
-        console.log('DONE');
-        console.log(commitsStatus.envStatus);
+        // console.log('DONE');
+        // console.log(commitsStatus.envStatus);
         clearInterval(myVar);
         doStuffs();
     }
@@ -205,7 +205,7 @@ function getBaseRC(tags){
         var found = tags[i]['name'].match(/RC-(\d*)-(\d*)-(\d*)(\.\d)*/);
         if(found){
             rcDate = (new Date(found[1] , found[2] - 1 , found[3]));
-            // console.log(rcDate + (twoWeeksAgo > rcDate));
+            // // console.log(rcDate + (twoWeeksAgo > rcDate));
             if(twoWeeksAgo > rcDate) {
                 rcSha = tags[i]['commit']['sha']
                 break;
@@ -217,7 +217,7 @@ function getBaseRC(tags){
 }
 
 function master(commits, headSHA){
-    console.log('----- MASTER -----');
+    // console.log('----- MASTER -----');
     var lcps = envLCPs('', '', '', commits);
 
     envStatus = new EnvStatus('master', 'master', headSHA, '');
@@ -237,10 +237,10 @@ function matchEnvsWithCommits(repo, tags, baseSHA){
             repo.compare(baseSHA, sha, function(err, commits){
 
                 var envTag = findTagForSHA(sha, tags)
-                console.log('-----------------------------------------------------');
-                console.log('Name ' + name);
-                console.log('Has SHA ' + sha);
-                console.log('Has Tag ' + envTag);
+                // console.log('-----------------------------------------------------');
+                // console.log('Name ' + name);
+                // console.log('Has SHA ' + sha);
+                // console.log('Has Tag ' + envTag);
 
                 envStatus = new EnvStatus(url, name, sha, envTag);
 
@@ -311,10 +311,10 @@ function storeMergedCommit(commit, sha, envName, mergedLCPs){
     var revertedLcp = extractRevertedLCP(msg);
 
     if(revertedLcp){
-        console.log('Found a Reverted Lcp ' + revertedLcp);
+        // console.log('Found a Reverted Lcp ' + revertedLcp);
         for(var i=0; i < mergedLCPs.length; i++){
             if(mergedLCPs[i]['lcp'] == revertedLcp){
-                console.log('Reverting ' + revertedLcp);
+                // console.log('Reverting ' + revertedLcp);
                 commitsStatus.removeLCP(revertedLcp, envName);
                 mergedLCPs.splice(i, 1);
                 return;
@@ -372,7 +372,7 @@ function extractRevertedLCP(message){
 
 function printLCPs(lcps, envStatus){
     for(var i=0; i<lcps.length; i++){
-        console.log(lcps[i]['lcp'] + ' ' + lcps[i]['date'] + ' ' + lcps[i]['sha'] + ' '  + lcps[i]['branch'] + ' '  + lcps[i]['message']);
+        // console.log(lcps[i]['lcp'] + ' ' + lcps[i]['date'] + ' ' + lcps[i]['sha'] + ' '  + lcps[i]['branch'] + ' '  + lcps[i]['message']);
     }
 }
 
@@ -381,15 +381,15 @@ function fetchEnvSHA(url, name, cb) {
         var found = data.match(/Version:\s*(.*)[\s|\S]Database/);
         cb(url, name, found[1]);
     }).fail(function() {
-            console.log("error " + url);
+            // console.log("error " + url);
             cb('', '', '');
         });
 }
 
 function showAllCommits(commits){
-    console.log(commits['base_commit']['sha']);
+    // console.log(commits['base_commit']['sha']);
     for(var i=0; i < commits['commits'].length; i++){
-        console.log(commits['commits'][i]['sha'] + commits['commits'][i]['commit']['author']['date']);
+        // console.log(commits['commits'][i]['sha'] + commits['commits'][i]['commit']['author']['date']);
     }
 }
 

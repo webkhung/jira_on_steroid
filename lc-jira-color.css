@@ -94,7 +94,7 @@
 #intu-status, #intu-release, #intu-filter-users, #intu-filter-priorities, #intu-filter-issuetype, #intu-filter-fixversion, #intu-mention, #intu-filter-components {
     display: none;
     position: absolute;
-    width: 500px;
+    width: 700px;
     top: 0px;
     right: 33px;
     padding: 10px 10px 40px 10px;

@@ -315,8 +315,7 @@ function pluginFilterFixVersion(name){
 function pluginFilterIssuetype(name){
     if(name == 'Hide all sub-tasks'){
         $('.ghx-issue, .ghx-issue-compact').show();
-        $(".ghx-issue[_issuetype='Sub-task']").hide();
-        $(".ghx-issue-compact[_issuetype='Sub-task']").hide();
+        $(".ghx-issue-subtask").hide();
     }
     else {
         $('.ghx-issue, .ghx-issue-compact').hide();

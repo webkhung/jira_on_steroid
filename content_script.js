@@ -153,6 +153,9 @@ function processIssues(data){
         workColumnStatuses[key].count = 0;
     }
 
+    addIssueTypeFilter('Hide all sub-tasks');
+    addUserFilter('Unassigned');
+
     console.log('--- processing data size ' + data.issues.length);
     data.issues.forEach(function(issue) {
         var elIssue = $("div[data-issue-key='" + issue.key + "'].ghx-issue, div[data-issue-key='" + issue.key + "'].ghx-issue-compact").first();
@@ -164,8 +167,6 @@ function processIssues(data){
         resetIssue(elIssue);
         var issueIsPR = jiraGithub.addPullRequestLabel(issue.key, elIssue);
         addHovercardTo(elIssue, fields, issue.key);
-        addUserFilter('Unassigned');
-        addIssueTypeFilter('Hide all sub-tasks');
         addLabelTo(elIssue, createLabelFrom(fields.labels, issueIsPR, elIssue), 'top-right');
         addAttributesTo(elIssue, fields, issueIsPR);
         addOpenIssueLinkTo(elIssue, issue.key);
@@ -378,11 +379,9 @@ function addAttributesTo(elIssue, fields, issueIsPR){
 
     var issuetype = '';
     if (fields.issuetype) issuetype = fields.issuetype.name;
-    console.log(fields.issuetype.name)
 
     var fixVersions = '';
     if (fields.fixVersions) {
-        console.log(fields.fixVersions)
         for (var i=0; i < fields.fixVersions.length; i++){
             var fixVersionName = fields.fixVersions[i].name;
             fixVersions += (fixVersionName + ",");

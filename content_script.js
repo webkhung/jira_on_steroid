@@ -1,7 +1,7 @@
 var hostname = "https://" + window.location.hostname;
 var documentUrl = document.URL.toString()
 var baseUrl = documentUrl.substring(0, documentUrl.indexOf('/secure/'));
-var hoverDescription, showLastComment, relatedCards, fixVersion;
+var hoverDescription, showLastComment, relatedCards, fixVersion, ck1, ck2, ck3, ck4, ck5, ck6, ck7, ck8, ck9, ck10;
 var statusCounts = {};
 var statusStoryPoints = {};
 var workFields = "&maxResults=1000&fields=key,priority,created,updated,status,summary,description,parent,labels,subtasks,assignee,issuelinks,fixVersions,comment,components,issuetype," + storyPointsField + extraFields;
@@ -16,15 +16,39 @@ var setTimeoutLoadPlugin;
 var hasGithub;
 var releaseIssues = [];
 var rapidViewID;
+var bHasStarted = false;
 
-if(window.location.href.indexOf('RapidBoard') > 0) {
-    setupRapidBoard();
-}
-else if(window.location.href.indexOf('browse') > 0){
-    setupIssuePage();
-}
-else {
-    jiraGithub.setIntervalChangeGithubPage();
+chrome.storage.sync.get('enabled', function(value) {
+    if(value.enabled) {
+        startPlugin();
+    }
+});
+
+chrome.storage.onChanged.addListener(function(changes, namespace) {
+    for (key in changes) {
+        var storageChange = changes[key];
+        if(key == 'enabled' && storageChange.newValue == true){
+            startPlugin()
+        }
+    }
+});
+
+function startPlugin(){
+    if(bHasStarted){
+        alert('JIRA on Steroids is currently running');
+        return;
+    }
+    bHasStarted = true;
+
+    if(window.location.href.indexOf('RapidBoard') > 0) {
+        setupRapidBoard();
+    }
+    //else if(window.location.href.indexOf('browse') > 0){
+    //    setupIssuePage();
+    //}
+    else {
+        jiraGithub.setIntervalChangeGithubPage();
+    }
 }
 
 function setupIssuePage(){
@@ -115,20 +139,22 @@ function setupClientLoadPluginEvent() {
     };
 
     setTimeout(function(){
-        $('#ghx-pool').on('click', '.issueLink', function(e){
-            var issueKey = $(this).parents('.ghx-issue').data('issue-key');
-            window.open("https://" + window.location.hostname + '/browse/' + issueKey);
-            e.stopPropagation();
-        });
+        (function($) {
+            $('#ghx-pool').on('click', '.issueLink', function(e){
+                var issueKey = $(this).parents('.ghx-issue').data('issue-key');
+                window.open("https://" + window.location.hostname + '/browse/' + issueKey);
+                e.stopPropagation();
+            });
 
-        $('#work-toggle, #plan-toggle').on('click', function(){
-            hidingHeight = 0;
-            $('#announcement-banner, #header, #ghx-operations').show();
-        });
+            $('#work-toggle, #plan-toggle').on('click', function(){
+                hidingHeight = 0;
+                $('#announcement-banner, #header, #ghx-operations').show();
+            });
 
-        $(window).resize(function() {
-            setTimeout(function(){pluginAdjustSpace()}, 1000);
-        });
+            $(window).resize(function() {
+                setTimeout(function(){pluginAdjustSpace()}, 1000);
+            });
+        })(jQuery);
     }, 4000);
 
     console.yo = console.log;
@@ -275,14 +301,14 @@ function addPluginMenu(){
     $('#intu-menu').html("<span id='intu-menu-load'></span><span id='intu-menu-error'></span>");
     $('#intu-side-menu').remove();
     $('body').append("<div id='intu-side-menu'></div>");
-    $('#intu-side-menu').append("<a href='javascript:pluginMaxSpace();' title='Maximize Space' class='masterTooltip'><img width=16 height=16 src=" + chrome.extension.getURL('images/max.png') + "></a>");
+    $('#intu-side-menu').append("<a href='javascript:pluginMaxSpace();' id='maxSpace' title='Maximize Space' class='masterTooltip'><img width=16 height=16 src=" + chrome.extension.getURL('images/max.png') + "></a>");
 
     if(hasGithub && rapidViewID == 7690){
         $('#intu-side-menu').append("<a href='javascript:pluginShowGithubDashboard();' id='githubDashboard' title='Github Dashboard' class='masterTooltip'><img width=16 height=16 src=" + chrome.extension.getURL('images/github.png') + "></a>");
     }
 
     if(extraFields.indexOf('customfield_11712')>=0)
-        $('#intu-side-menu').append("<a href='javascript:pluginCardsWatching(\"" + myName() + "\");' title='Show cards I am watching' class='masterTooltip'><img width=16 height=16 src=" + chrome.extension.getURL('images/watching.png') + "></a>");
+        $('#intu-side-menu').append("<a id='cardsWatching' href='javascript:pluginCardsWatching(\"" + myName() + "\");' title='Show cards I am watching' class='masterTooltip'><img width=16 height=16 src=" + chrome.extension.getURL('images/watching.png') + "></a>");
 
     var sorts = {
         label:        { id: 'sortLabel', image: "images/label.png", title: "Sort by labels", attr: "_label", order: "desc", valueType: "string" },
@@ -302,7 +328,7 @@ function addPluginMenu(){
             <a href='javascript:pluginShowPriorityFilter();' id='priorityFilter' title='Priority Filters' class='masterTooltip'><img width=16 height=16 src=" + chrome.extension.getURL('images/priority2.png') + "></a>  \
             <a href='javascript:pluginShowFixVersionFilter();' id='fixversionFilter' title='FixVersion Filters' class='masterTooltip'><img width=16 height=16 src=" + chrome.extension.getURL('images/fixversion.png') + "></a>  \
             <a href='javascript:pluginShowIssuetypeFilter();' id='issuetypeFilter' title='Issuetype Filters' class='masterTooltip'><img width=16 height=16 src=" + chrome.extension.getURL('images/story_points.png') + "></a>  \
-            <a href='javascript:pluginToggleStatus();' title='Issue Status' class='masterTooltip'><img width=16 height=16 src=" + chrome.extension.getURL('images/status.png') + "></a>  \
+            <a href='javascript:pluginToggleStatus();' id='issueStatus' title='Issue Status' class='masterTooltip'><img width=16 height=16 src=" + chrome.extension.getURL('images/status.png') + "></a>  \
             <a id='pluginMentionCount' href='javascript:pluginMention();' title='You are mentioned' class='masterTooltip'></a>")
         .append("<a href='javascript:pluginRelease();' id='release' title='Release Notes' class='masterTooltip'><img width=16 height=16 src=" + chrome.extension.getURL('images/notes.png') + "></a>")
         .append("<div id='intu-mention'></div>")
@@ -326,6 +352,17 @@ function addPluginMenu(){
                 <a href='javascript:pluginClose();' class='close-button'>Close</a>\
                 <div id='num-of-issues'><strong># of Issues : </strong><span id='intu-status-issues'></span></div>  \
                 <div id='num-of-points'><strong># of Story Pts : </strong><span id='intu-status-points'></span></div></div>");
+
+    if(!ck1) $('#maxSpace').hide();
+    if(!ck2) $('#cardsWatching').hide();
+    if(!ck3) $('#sortLabel').hide();
+    if(!ck4) $('#sortAssignee').hide();
+    if(!ck5) $('#componentFilter').hide();
+    if(!ck6) $('#userFilter').hide();
+    if(!ck7) $('#priorityFilter').hide();
+    if(!ck8) $('#fixversionFilter').hide();
+    if(!ck9) $('#issuetypeFilter').hide();
+    if(!ck10) $('#issueStatus').hide();
 
     if(hasGithub && rapidViewID == 7690){
         $('#intu-side-menu').append("<div id='intu-github'><div id='placeholder'></div></div>")
@@ -448,7 +485,7 @@ function addAttributesTo(elIssue, fields, issueIsPR){
                 currentComponent = elIssue.attr('_componentName')
             elIssue.attr('_componentName',  currentComponent + "|" + componentName);
 
-            $('#componentFilter').css('display', 'block');
+            if(ck5) $('#componentFilter').css('display', 'block');
         }
     }
 }
@@ -762,10 +799,21 @@ function getLocalStorage(){
         localStorageSet = true;
         hasGithub = jiraGithub.initVariables(response);
         watchersNames = response.watchersNames;
-        hoverDescription = response.hoverDescription == 'true';
-        showLastComment = response.lastComment == 'true';
-        relatedCards = response.relatedCards == 'true';
-        fixVersion = response.fixVersion == 'true';
+        hoverDescription = response.hoverDescription != 'false';
+        showLastComment = response.lastComment != 'false';
+        relatedCards = response.relatedCards != 'false';
+        fixVersion = response.fixVersion != 'false';
+
+        ck1 = response.ck1 != 'false';
+        ck2 = response.ck2 != 'false';
+        ck3 = response.ck3 != 'false';
+        ck4 = response.ck4 != 'false';
+        ck5 = response.ck5 != 'false';
+        ck6 = response.ck6 != 'false';
+        ck7 = response.ck7 != 'false';
+        ck8 = response.ck8 != 'false';
+        ck9 = response.ck9 != 'false';
+        ck10 = response.ck10 != 'false';
     });
 }
 

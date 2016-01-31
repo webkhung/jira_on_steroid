@@ -1,4 +1,5 @@
 window.sortAllJiraIssues = function(attr, order, valueType) {
+    (function( $ ) {
     $('.ghx-columns .ghx-column, .ghx-has-issues').each(function() {
         var mylist = $(this);
         var listitems = mylist.find('.ghx-issue, .ghx-issue-compact').get();
@@ -25,11 +26,13 @@ window.sortAllJiraIssues = function(attr, order, valueType) {
             mylist.append(itm);
         });
     });
+    })(jQuery);
 }
 
 var hidingHeight = 0;
 
 function pluginAdjustSpace(){
+    (function( $ ) {
     var mainHeight = 0;
     if($('#ghx-plan-group').length == 0){
         mainHeight = pluginToInt($('#ghx-work').css('height'));
@@ -49,9 +52,11 @@ function pluginAdjustSpace(){
     if($('#ghx-plan-group').length == 0){
         GH.SwimlaneStalker.poolStalker(); // Move the work view column header up
     }
+    })(jQuery);
 }
 
 function pluginMaxSpace(){
+    (function( $ ) {
     if (hidingHeight == 0) {
         hidingHeight = $('#announcement-banner').height() + $('header .aui-header').height() + $('#ghx-operations').height();
     }
@@ -62,6 +67,7 @@ function pluginMaxSpace(){
     }
 
     pluginAdjustSpace();
+    })(jQuery);
 }
 
 function pluginToInt(str){
@@ -69,23 +75,31 @@ function pluginToInt(str){
 }
 
 function pluginCardsWatching(myName){
+    (function( $ ) {
     $("div.ghx-issue").not("div.ghx-issue[_watchers*='" + myName + "']").toggle();
     $("div.ghx-issue-compact").not("div.ghx-issue-compact[_watchers*='" + myName + "']").toggle();
+    })(jQuery);
 }
 
 function pluginToggleStatus(){
+    (function( $ ) {
     $('#intu-release, #intu-filter-users, #intu-filter-components, #intu-mention, #intu-github').hide();
     $('#intu-status').toggle();
+    })(jQuery);
 }
 
 function pluginShowGithubDashboard(){
+    (function( $ ) {
     $('#intu-release, #intu-filter-users, #intu-filter-components, #intu-mention').hide();
     $('#intu-github').toggle();
+    })(jQuery);
 }
 
 function pluginRelease(){
+    (function( $ ) {
     $('#intu-status, #intu-filter-users, #intu-filter-components, #intu-mention, #intu-github').hide();
     $('#intu-release').toggle();
+    })(jQuery);
 }
 
 var lastEditPopup = '';
@@ -265,54 +279,73 @@ function convertToCheckboxesPopup(){
 }
 
 function pluginShowUserFilter(){
+    (function( $ ) {
     pluginClose();
     $('#intu-filter-users').toggle();
+    })(jQuery);
 }
 
 function pluginShowPriorityFilter(){
+    (function( $ ) {
     pluginClose();
     $('#intu-filter-priorities').toggle();
+    })(jQuery);
 }
 
 function pluginShowFixVersionFilter(){
+    (function( $ ) {
     pluginClose();
     $('#intu-filter-fixversion').toggle();
+    })(jQuery);
 }
 
 function pluginShowIssuetypeFilter(){
+    (function( $ ) {
     pluginClose();
     $('#intu-filter-issuetype').toggle();
+    })(jQuery);
 }
 
 function pluginShowComponentFilter(){
+    (function( $ ) {
     pluginClose();
     $('#intu-filter-components').toggle();
+    })(jQuery);
 }
 
 function pluginMention(){
+    (function( $ ) {
     pluginClose();
     $('#intu-mention').toggle();
+    })(jQuery);
 }
 
 function pluginFilterUser(name){
+    (function( $ ) {
     $('.ghx-issue, .ghx-issue-compact').hide();
     $(".ghx-issue[_displayName='" + name + "']").show();
     $(".ghx-issue-compact[_displayName='" + name + "']").show();
+    })(jQuery);
 }
 
 function pluginFilterPriority(name){
+    (function( $ ) {
     $('.ghx-issue, .ghx-issue-compact').hide();
     $(".ghx-issue[_priority='" + name + "']").show();
     $(".ghx-issue-compact[_priority='" + name + "']").show();
+    })(jQuery);
 }
 
 function pluginFilterFixVersion(name){
+    (function( $ ) {
     $('.ghx-issue, .ghx-issue-compact').hide();
     $(".ghx-issue[_fixVersion='" + name + "']").show();
     $(".ghx-issue-compact[_fixVersion='" + name + "']").show();
+    })(jQuery);
 }
 
 function pluginFilterIssuetype(name){
+    (function( $ ) {
     if(name == 'Hide all sub-tasks'){
         $('.ghx-issue, .ghx-issue-compact').show();
         $(".ghx-issue-subtask").hide();
@@ -322,18 +355,25 @@ function pluginFilterIssuetype(name){
         $(".ghx-issue[_issuetype='" + name + "']").show();
         $(".ghx-issue-compact[_issuetype='" + name + "']").show();
     }
+    })(jQuery);
 }
 
 function pluginFilterComponent(name){
+    (function( $ ) {
     $('.ghx-issue, .ghx-issue-compact').hide();
     $(".ghx-issue[_componentName*='|" + name + "']").show();
     $(".ghx-issue-compact[_componentName*='|" + name + "']").show();
+    })(jQuery);
 }
 
 function pluginClearFilter(){
+    (function( $ ) {
     $('.ghx-issue, .ghx-issue-compact').show();
+    })(jQuery);
 }
 
 function pluginClose(){
+    (function( $ ) {
     $('#intu-side-menu > div').hide();
+    })(jQuery);
 }

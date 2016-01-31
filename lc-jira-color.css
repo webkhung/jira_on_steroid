@@ -47,7 +47,7 @@
     border: 1px solid #333;
     position: absolute;
     top: 50px;
-    right: 1px;
+    right: 20px;
     background-color: #FFD738;
     z-index: 100000;
     font-size: 13px;
@@ -387,4 +387,10 @@ there's a rowspan on the first cell. Case added to the tests. issue#432 */
 
 #ac_list p {
     margin-top: 5px !important;
+}
+
+.popupButton  {
+    font-size: 15px;
+    padding: 7px;
+    display: block;
 }

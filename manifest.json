@@ -1,7 +1,7 @@
 {
   "description": "",
-  "icons": { "16": "images/jira16.png",
-             "48": "images/jira48.png",
+  "icons": { "16": "images/icon.png",
+             "48": "images/icon.png",
              "128": "images/jira128.png" },
   "permissions": [
     "storage"
@@ -10,13 +10,13 @@
     "scripts": ["background.js"],
     "persistent": false
   },
-  "name": "JIRA on Steroid",
-  "version": "5.5",
+  "name": "JIRA on Steroids",
+  "version": "5.6",
   "options_page": "options.html",
   "content_scripts": [
     {
-      "matches": ["https://jira.intuit.com/*", "https://github.com/live-community/live_community/pull*", "https://github.intuit.com/"],
-      "css": ["lc-jira-color.css"],
+      "matches": ["https://jira.intuit.com/*", "https://github.com/live-community/live_community/pull*", "https://github.intuit.com/", "http://pppdc9prdacy.corp.intuit.net:8080/*"],
+      "css": ["lc-jira-color.css", "options.css"],
       "js": ["lib/base64.js", "lib/underscore-min.js", "github.js", "jquery.js", "utils.js", "jira_github.js", "intuit.js", "content_script.js"]
     }
   ],
@@ -46,6 +46,7 @@
       "images/watching.png",
       "images/users.png",
       "images/component.png",
+      "images/menubar.png",
       "script.js"
   ],
   "manifest_version": 2

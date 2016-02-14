@@ -56,10 +56,12 @@ function saveOptions() {
     localStorage["ck9"] = document.getElementById("ck9").checked;
     localStorage["ck10"] = document.getElementById("ck10").checked;
 
-    document.getElementById("savedMsg").style.display = 'inline-block';
+    document.getElementById("savedMsg1").style.display = 'inline-block';
+    document.getElementById("savedMsg2").style.display = 'inline-block';
 }
 
 window.addEventListener("load", loadOptions);
-document.getElementById("saveButton").addEventListener("click",saveOptions);
+document.getElementById("saveButton1").addEventListener("click",saveOptions);
+document.getElementById("saveButton2").addEventListener("click",saveOptions);
 
 document.getElementById("menubar").src = chrome.extension.getURL("images/menubar.png");

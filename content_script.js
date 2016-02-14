@@ -19,7 +19,7 @@ var rapidViewID;
 var bHasStarted = false;
 
 chrome.storage.sync.get('enabled', function(value) {
-    if(value.enabled) {
+    if(value.enabled || value.enabled === undefined) {
         startPlugin();
     }
 });
@@ -35,7 +35,6 @@ chrome.storage.onChanged.addListener(function(changes, namespace) {
 
 function startPlugin(){
     if(bHasStarted){
-        alert('JIRA on Steroids is currently running');
         return;
     }
     bHasStarted = true;
@@ -301,6 +300,8 @@ function addPluginMenu(){
     $('#intu-menu').html("<span id='intu-menu-load'></span><span id='intu-menu-error'></span>");
     $('#intu-side-menu').remove();
     $('body').append("<div id='intu-side-menu'></div>");
+
+    $('#intu-side-menu').append("<a href='javascript:pluginToggleMenu();' id='toggleMenu' title='Toggle Menu' class='toggleMenu'><img id='imgToggle' width=16 height=16 src=" + chrome.extension.getURL('images/arrow_down.png') + "></a>");
     $('#intu-side-menu').append("<a href='javascript:pluginMaxSpace();' id='maxSpace' title='Maximize Space' class='masterTooltip'><img width=16 height=16 src=" + chrome.extension.getURL('images/max.png') + "></a>");
 
     if(hasGithub && rapidViewID == 7690){
@@ -353,16 +354,16 @@ function addPluginMenu(){
                 <div id='num-of-issues'><strong># of Issues : </strong><span id='intu-status-issues'></span></div>  \
                 <div id='num-of-points'><strong># of Story Pts : </strong><span id='intu-status-points'></span></div></div>");
 
-    if(!ck1) $('#maxSpace').hide();
-    if(!ck2) $('#cardsWatching').hide();
-    if(!ck3) $('#sortLabel').hide();
-    if(!ck4) $('#sortAssignee').hide();
-    if(!ck5) $('#componentFilter').hide();
-    if(!ck6) $('#userFilter').hide();
-    if(!ck7) $('#priorityFilter').hide();
-    if(!ck8) $('#fixversionFilter').hide();
-    if(!ck9) $('#issuetypeFilter').hide();
-    if(!ck10) $('#issueStatus').hide();
+    if(!ck1) $('#maxSpace').addClass('disabledMenu').hide();
+    if(!ck2) $('#cardsWatching').addClass('disabledMenu').hide();
+    if(!ck3) $('#sortLabel').addClass('disabledMenu').hide();
+    if(!ck4) $('#sortAssignee').addClass('disabledMenu').hide();
+    if(!ck5) $('#componentFilter').addClass('disabledMenu').hide();
+    if(!ck6) $('#userFilter').addClass('disabledMenu').hide();
+    if(!ck7) $('#priorityFilter').addClass('disabledMenu').hide();
+    if(!ck8) $('#fixversionFilter').addClass('disabledMenu').hide();
+    if(!ck9) $('#issuetypeFilter').addClass('disabledMenu').hide();
+    if(!ck10) $('#issueStatus').addClass('disabledMenu').hide();
 
     if(hasGithub && rapidViewID == 7690){
         $('#intu-side-menu').append("<div id='intu-github'><div id='placeholder'></div></div>")
@@ -748,7 +749,12 @@ $.fn.hovercard = function(options) {
 
             // Left - different cases for plan view and work view
             if ($(this).hasClass('ghx-key')){
-                left = offset.left + $(this).width() + 50;
+                if ((window.innerWidth - (offset.left + $(this).width() + 50)) < 300) {
+                    left = offset.left - 340;
+                }
+                else {
+                    left = offset.left + $(this).width() + 50;
+                }
             }
             else {
                 if( (offset.left + $(this).width() + 45 + width) > window.innerWidth){

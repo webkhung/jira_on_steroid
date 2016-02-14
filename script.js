@@ -55,6 +55,20 @@ function pluginAdjustSpace(){
     })(jQuery);
 }
 
+function pluginToggleMenu(){
+    (function( $ ) {
+    var src = $('#imgToggle').attr('src');
+    if(src.indexOf('arrow_down') > 0){
+        $('#intu-side-menu > a').not('.toggleMenu, .disabledMenu').css('display','block');
+        $('#imgToggle').attr('src', src.replace('arrow_down', 'arrow_up'));
+    }
+    else {
+        $('#intu-side-menu > a').not('.toggleMenu, .disabledMenu').css('display','none');
+        $('#imgToggle').attr('src', src.replace('arrow_up', 'arrow_down'));
+    }
+    })(jQuery);
+}
+
 function pluginMaxSpace(){
     (function( $ ) {
     if (hidingHeight == 0) {

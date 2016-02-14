@@ -223,6 +223,8 @@ function mentionHtml(issueKey, lastComment, summary){
         var nextCount = parseInt(mCount) + 1;
         $('#pluginMentionCount').text(nextCount)
     }
+
+    $('#intu-mention').append("<a href='javascript:pluginClose();' class='close-button'>Close</a>");
 }
 
 function WorkStatus(name, columnId){

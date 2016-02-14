@@ -19,7 +19,7 @@ button {
     font-size: 16px;
 }
 
-#savedMsg {
+#savedMsg1, #savedMsg2 {
     display: none;
     color: blue;
     font-size: 16px;

@@ -43,7 +43,7 @@
 #intu-side-menu > #componentFilter { display: none; }
 
 #intu-side-menu {
-    padding: 7px 4px;
+    padding: 1px 5px;
     border: 1px solid #333;
     position: absolute;
     top: 50px;
@@ -55,8 +55,13 @@
 }
 
 #intu-side-menu > a {
-    display: block;
+    display: none;
     margin: 5px 0;
+}
+
+#intu-side-menu > a.toggleMenu {
+    display: block;
+    margin: 5px 0px 1px 0px;
 }
 
 #intu-menu {
@@ -86,7 +91,7 @@
     left: 0px;
     background-color: #ffcb6d;
     height: 25px;
-    width: 520px;
+    width: 100%;
     line-height: 25px;
     color: red;
 }
@@ -393,4 +398,9 @@ there's a rowspan on the first cell. Case added to the tests. issue#432 */
     font-size: 15px;
     padding: 7px;
     display: block;
+}
+
+#loadingMessage {
+    font-size: 20px;
+    color: dodgerblue;
 }

@@ -19,7 +19,7 @@ document.addEventListener('DOMContentLoaded', function() {
         chrome.storage.sync.set({'enabled': changeToEnabled}, function() {
             setEnableButtonText(changeToEnabled);
             if(changeToEnabled){
-                $('#loadingMessage').html('<BR>JIRA on Steroids will start if you are on the JIRA scrumboard');
+                $('#loadingMessage').html('<BR>JIRA on Steroids will start if you are on a JIRA scrumboard');
             }
         });
     });

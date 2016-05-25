@@ -223,6 +223,10 @@ function updateJiraBoard() {
     addPluginMenu();
     resetIssueStatus();
 
+
+    chrome.runtime.sendMessage({method: "updateJiraBoard", id: sprintID + '_' + rapidViewID}, function(response) {});
+
+
     if (sprintID.length == 0 && rapidViewID.length == 0) {
         updateLoadStatus('Not a RapidBoard Url');
     }

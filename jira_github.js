@@ -2,7 +2,7 @@ var githubIssues = [];
 var githubUsername, githubPassword, githubUser, githubRepo, watchersNames;
 
 var ALL_ENVS = [
-    ['https://foo.qa.lc.a.intuit.com', 'qa'],
+    ['https://foo.pod-2-qa-2.cto-live-community-preprod.lc.a.intuit.com', 'qa'],
     ['https://community.e2e.lc.a.intuit.com', 'shared-e2e'],
     ['https://turbotax-community-e2e.intuit.com', 'tax-e2e'],
     ['https://community.intuit.com', 'shared'],

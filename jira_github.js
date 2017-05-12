@@ -57,23 +57,23 @@ function JiraGithub(){
             });
 
             // Fetch commits
-            var repo = github.getRepo('live-community', 'live_community');
-            repo.listTags(function(_, tags){
-                var tmp = getBaseRC(tags);
-                var baseSHA = tmp[0];
-                var tags = tmp[1];
-                repo.getRef('heads/master', function(err, headSHA) {
-                    repo.compare(baseSHA, headSHA, function(err, commits){
-                        // console.log('Base (Oldest) SHA'  + baseSHA + '--- Head SHA' + headSHA);
-                        commitsStatus = new CommitsStatus(baseSHA, headSHA);
-                        commitsStatus.tags = tags;
-                        master(commits, headSHA);
-                        matchEnvsWithCommits(repo, tags, baseSHA);
-                    });
-                });
-
-                myVar = setInterval(checkCommitsStatus, 1000);
-            });
+//            var repo = github.getRepo('live-community', 'live_community');
+//            repo.listTags(function(_, tags){
+//                var tmp = getBaseRC(tags);
+//                var baseSHA = tmp[0];
+//                var tags = tmp[1];
+//                repo.getRef('heads/master', function(err, headSHA) {
+//                    repo.compare(baseSHA, headSHA, function(err, commits){
+//                        // console.log('Base (Oldest) SHA'  + baseSHA + '--- Head SHA' + headSHA);
+//                        commitsStatus = new CommitsStatus(baseSHA, headSHA);
+//                        commitsStatus.tags = tags;
+//                        master(commits, headSHA);
+//                        matchEnvsWithCommits(repo, tags, baseSHA);
+//                    });
+//                });
+//
+//                myVar = setInterval(checkCommitsStatus, 1000);
+//            });
         }
         else {
             $('#placeholder').text('Missing GitHub login details');
@@ -105,14 +105,14 @@ function JiraGithub(){
 
         var prInfo = psLabel + ' (PR: ' + psDaysOld + ' days)';
 
-        if (psDaysOld > 10 && psDaysOld <= 20) {
-            var imgURL = chrome.extension.getURL('images/web.png');
-            elIssue.css('background-image', 'url("' + imgURL + '")');
-        }
-        else if (psDaysOld > 21) {
-            var imgURL = chrome.extension.getURL('images/web2.png');
-            elIssue.css('background-image', 'url("' + imgURL + '")');
-        }
+//        if (psDaysOld > 10 && psDaysOld <= 20) {
+//            var imgURL = chrome.extension.getURL('images/web.png');
+//            elIssue.css('background-image', 'url("' + imgURL + '")');
+//        }
+//        else if (psDaysOld > 21) {
+//            var imgURL = chrome.extension.getURL('images/web2.png');
+//            elIssue.css('background-image', 'url("' + imgURL + '")');
+//        }
 
         var img = $('<img />').attr({
             src: chrome.extension.getURL("images/github.png"),

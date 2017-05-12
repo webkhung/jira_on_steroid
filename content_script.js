@@ -168,6 +168,8 @@ function setupClientLoadPluginEvent() {
 }
 
 function processIssues(data){
+    var closedStories = [];
+  
     console.log('--- processIssues');
     updateLoadStatus('Received ' + data.issues.length + ' issues details');
 
@@ -183,18 +185,30 @@ function processIssues(data){
 
     console.log('--- processing data size ' + data.issues.length);
     data.issues.forEach(function(issue) {
-        var elIssue = $("div[data-issue-key='" + issue.key + "'].ghx-issue, div[data-issue-key='" + issue.key + "'].ghx-issue-compact").first();
+        var elIssue = getIssueElement(issue.key);
+//        var elIssue = $("div[data-issue-key='" + issue.key + "'].ghx-issue, div[data-issue-key='" + issue.key + "'].ghx-issue-compact").first();
         if (elIssue.length == 0) return; // in case the card doesn't exist on the UI
         var fields = issue.fields;
 
-        workColumnStatuses[parseInt(fields.status.id)].increment();
+        if(workColumnStatuses[parseInt(fields.status.id)]) {
+            workColumnStatuses[parseInt(fields.status.id)].increment();
+        }
 
         resetIssue(elIssue);
         var issueIsPR = jiraGithub.addPullRequestLabel(issue.key, elIssue);
         addHovercardTo(elIssue, fields, issue.key);
-        addLabelTo(elIssue, createLabelFrom(fields.labels, issueIsPR, elIssue), 'top-right');
+        addLabelTo(elIssue, createLabelFrom(fields.labels, issueIsPR, elIssue, fields.status.name != 'Closed'), 'top-right');
         addAttributesTo(elIssue, fields, issueIsPR);
         addOpenIssueLinkTo(elIssue, issue.key);
+        addFlightCrewTo(elIssue, fields);
+
+        if(fields.status.name == 'In Progress') {
+          addDays(elIssue, fields);
+        }
+
+        if(fields.status.name == 'Closed' && fields.issuetype.name == 'Story'){
+          closedStories[closedStories.length] = issue.key;
+        }
 
         if(fields.customfield_11712){
             addWatchersTo(elIssue, fields.assignee, fields.customfield_11712, watchersNames);
@@ -212,6 +226,77 @@ function processIssues(data){
     setIssueStatus(statusCounts, statusStoryPoints);
 
     createReleaseNotes();
+
+    closedStories.forEach(function(issueKey){
+      makeApiRequest(baseUrl + '/rest/api/2/issue/' + issueKey + '?expand=changelog', computeCycleTime)
+    });
+}
+
+function getIssueElement(issueKey){
+  return $("div[data-issue-key='" + issueKey + "'].ghx-issue, div[data-issue-key='" + issueKey + "'].ghx-issue-compact").first();
+}
+
+function computeCycleTime(data){
+  var firstTimeInProgress = null;
+  var lastTimeClosed = null;
+  var released = null;
+
+  var blockedDuration = 0;
+  var enteredBlocked;
+  var leftBlocked;
+
+  data.changelog.histories.forEach(function(h){
+    h.items.forEach(function(item){
+      var field = item.field;
+      var created = h.created;
+
+      if(field == 'status'){
+        if(item.toString == 'In Progress' && firstTimeInProgress == null){
+          firstTimeInProgress = created;
+        }
+        else if(item.toString == 'Blocked'){
+          enteredBlocked = created;
+        }
+        else if(item.fromString == 'Blocked') {
+          leftBlocked = created;
+          blockedDuration += daysDiff(enteredBlocked, leftBlocked);
+          console.log('Total blocked ' + blockedDuration)
+        }
+        else if(item.toString == 'Closed') {
+          lastTimeClosed = created;
+          console.log('Total blocked ' + blockedDuration)
+        }
+
+        console.log(item.fromString + ' -> ' + item.toString);
+      }
+      else if(field == 'Released'){
+        console.log('Released');
+        released =  created;
+      }
+    });
+  });
+
+  var issueElem = getIssueElement(data.key);
+
+  var releasedString = released ? "Released. Cycle Time: " : "Not yet released. Time taken: ";
+
+  var daysTakenToRelease;
+  if(firstTimeInProgress){
+    daysTakenToRelease = (daysDiff(firstTimeInProgress, released ? released : lastTimeClosed) - blockedDuration).toFixed(1) + ' Days';;
+  }
+  else {
+    daysTakenToRelease = "N/A";
+  }
+
+  if(released){
+    issueElem.css('background-color', 'rgb(255, 215, 56)');
+  }
+
+  var blockedString = '';
+  if(blockedDuration >= 1 ) {
+    blockedString = ' (Blocked for ' + blockedDuration.toFixed(1) + ' days)';
+  }
+  addInfoToBottom(issueElem, releasedString + daysTakenToRelease + blockedString);
 }
 
 function updateJiraBoard() {
@@ -258,18 +343,18 @@ function updateJiraBoard() {
 
 function callJira(sprintID, filterId, isKanban){
     if (sprintID !== undefined && sprintID != '') {
-        makeApiRequest(baseUrl + "/rest/api/latest/search?jql=sprint%3D" + sprintID + searchFields());
+        makeApiRequest(baseUrl + "/rest/api/latest/search?jql=sprint%3D" + sprintID + searchFields(), processIssues);
     }
     else {
         var query = (isPlanView()? planIssueQuery : (isKanban ? kanbanIssueQuery : workIssueQuery));
-        makeApiRequest(baseUrl + "/rest/api/latest/search?jql=filter=" + filterId + query + searchFields());
+        makeApiRequest(baseUrl + "/rest/api/latest/search?jql=filter=" + filterId + query + searchFields(), processIssues);
     }
 }
 
-function makeApiRequest(url){
+function makeApiRequest(url, callback){
     console.log('--- makeApiRequest' + url)
     updateLoadStatus('Calling JIRA API for issues details');
-    $.get(url, processIssues, "json")
+    $.get(url, callback, "json")
         .fail(function() {
             updateLoadStatus('Error calling JIRA search api"', true);
         });
@@ -308,7 +393,7 @@ function addPluginMenu(){
     $('#intu-side-menu').append("<a href='javascript:pluginToggleMenu();' id='toggleMenu' title='Toggle Menu' class='toggleMenu'><img id='imgToggle' width=16 height=16 src=" + chrome.extension.getURL('images/arrow_down.png') + "></a>");
     $('#intu-side-menu').append("<a href='javascript:pluginMaxSpace();' id='maxSpace' title='Maximize Space' class='masterTooltip'><img width=16 height=16 src=" + chrome.extension.getURL('images/max.png') + "></a>");
 
-    if(hasGithub && rapidViewID == 7690){
+    if(hasGithub && rapidViewID == 13709){
         $('#intu-side-menu').append("<a href='javascript:pluginShowGithubDashboard();' id='githubDashboard' title='Github Dashboard' class='masterTooltip'><img width=16 height=16 src=" + chrome.extension.getURL('images/github.png') + "></a>");
     }
 
@@ -369,11 +454,11 @@ function addPluginMenu(){
     if(!ck9) $('#issuetypeFilter').addClass('disabledMenu').hide();
     if(!ck10) $('#issueStatus').addClass('disabledMenu').hide();
 
-    if(hasGithub && rapidViewID == 7690){
+    if(hasGithub && rapidViewID == 13709){
         $('#intu-side-menu').append("<div id='intu-github'><div id='placeholder'></div></div>")
     }
 
-    if(rapidViewID != 7690) {
+    if(rapidViewID != 13709) {
         $('#intu-side-menu #release').css('display', 'none');
     }
 
@@ -495,7 +580,7 @@ function addAttributesTo(elIssue, fields, issueIsPR){
     }
 }
 
-function createLabelFrom(labels, issueIsPR, elIssue){
+function createLabelFrom(labels, issueIsPR, elIssue, setBgColor){
     var displayLabel = '';
     labels = labels.sort();
 
@@ -506,7 +591,7 @@ function createLabelFrom(labels, issueIsPR, elIssue){
         }
     }
 
-    if (displayLabel.length > 0) {
+    if (displayLabel.length > 0 && setBgColor) {
         elIssue.css('background-color', 'rgba('+ hexToRgb(shadeColor(stringToColour(displayLabel), 20)) + ',0.35)');
     }
 
@@ -535,6 +620,35 @@ function addLabelTo(elIssue, label, position){
             cssClass = "intu-label-top-right";
         elIssue.append("<div class='intu-label " + cssClass + "'>" + label + "</div>");
     }
+}
+
+function addDays(elIssue) {
+  var days = parseInt(elIssue.find('.ghx-days').attr('title').split(' ')[0]);
+  var daysString = days + (days == 1 ? ' Day' : ' Days');
+  addInfoToBottom(elIssue, daysString);
+}
+
+function addInfoToBottom(elIssue, info){
+  elIssue.find('.ghx-issue-content').append("<div style='color: #4e7aff;font-size:16px;padding-top:14px'>" + info + "</div>");
+}
+
+function addFlightCrewTo(elIssue, fields) {
+  var f = fields.customfield_17801;
+  if(f === null) return;
+
+  var flightCrewAdded = 0;
+
+  for(var i=0; i<f.length; i++){
+    var displayName = f[i].displayName;
+    var avatarUrl = f[i].avatarUrls["32x32"];
+    var name = f[i].name;
+
+    if(name != fields.assignee.name) {
+      elIssue.find('.ghx-avatar').append("<div style='height:3px;width:1px'></div><img src='" + avatarUrl + "' class='ghx-avatar-img' alt='Assignee: " + displayName + "' data-tooltip='Assignee: " + displayName + "' />");
+      flightCrewAdded++;
+      if(flightCrewAdded == 2) break; // Only put two flight crews onto display
+    }
+  }
 }
 
 function addOpenIssueLinkTo(elIssue, issueKey){
@@ -647,7 +761,7 @@ function addHovercardTo(elIssue, fields, issueKey){
         addLabelTo(elIssue, 'Hygiene', 'bottom-left');
     }
 
-    // Acceptance Criteria
+  // Acceptance Criteria
 //    if (fields.customfield_13624 && fields.customfield_13624.length > 0) {
 //        var accpCount = $('<p>' + fields.customfield_13624 + '</p>').find('li').length;
 //        if(accpCount == 0) accpCount = 1;
@@ -681,7 +795,7 @@ function addHovercardTo(elIssue, fields, issueKey){
     elIssue.find('.ghx-key').first().hovercard({ // Removed ".ghx-issue-fields:first" because it is too big.
         detailsHTML:
             "<h3 style='float:left;padding-top:0px;'>Status</h3>" +
-                "<div style='float:right'><b>Created</b>: " + daysDiff(new Date(fields.created), new Date()) + ' days ago ' + " <b>Updated:</b> "+ daysDiff(new Date(fields.updated), new Date()) + ' days ago' + /*(new Date(fields.updated)).toLocaleDateString()*/
+                "<div style='float:right'><b>Created</b>: " + daysDiffRound(new Date(fields.created), new Date()) + ' days ago ' + " <b>Updated:</b> "+ daysDiff(new Date(fields.updated), new Date()) + ' days ago' + /*(new Date(fields.updated)).toLocaleDateString()*/
                 "</div><div style='clear:both'></div>" +
                 fields.status.name +
                 (fixVersion ? fixVersionHtml : "")+

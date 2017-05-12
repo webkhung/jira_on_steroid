@@ -32,6 +32,10 @@ function shadeColor(color, percent) {
     return "#" + RR + GG + BB;
 };
 
+function toDateFromTimezone(str){
+  return new Date(Date.parse(str))
+}
+
 function toDate(string){
     var date = new Date(string);
     return date.getMonth() + "/" + date.getDay() + "/" + date.getFullYear();
@@ -237,8 +241,14 @@ function WorkStatus(name, columnId){
     }
 }
 
-function daysDiff(older, newer){
+function daysDiffRound(older, newer){
     var timeDiff = Math.abs(newer.getTime() - older.getTime());
     var diffDays = Math.ceil(timeDiff / (1000 * 3600 * 24));
     return diffDays;
+}
+
+function daysDiff(olderDateStringWithTimeZone, newerDateStringWithTimeZone){
+  var timeDiff = Math.abs(toDateFromTimezone(newerDateStringWithTimeZone).getTime() - toDateFromTimezone(olderDateStringWithTimeZone).getTime());
+  var diffDays = timeDiff / (1000 * 3600 * 24);
+  return diffDays;
 }

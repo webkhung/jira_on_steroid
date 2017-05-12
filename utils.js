@@ -32,10 +32,6 @@ function shadeColor(color, percent) {
     return "#" + RR + GG + BB;
 };
 
-function toDateFromTimezone(str){
-  return new Date(Date.parse(str))
-}
-
 function toDate(string){
     var date = new Date(string);
     return date.getMonth() + "/" + date.getDay() + "/" + date.getFullYear();
@@ -241,14 +237,40 @@ function WorkStatus(name, columnId){
     }
 }
 
+function toDateFromTimezone(str){
+  return new Date(Date.parse(str))
+}
+
 function daysDiffRound(older, newer){
     var timeDiff = Math.abs(newer.getTime() - older.getTime());
     var diffDays = Math.ceil(timeDiff / (1000 * 3600 * 24));
     return diffDays;
 }
 
-function daysDiff(olderDateStringWithTimeZone, newerDateStringWithTimeZone){
-  var timeDiff = Math.abs(toDateFromTimezone(newerDateStringWithTimeZone).getTime() - toDateFromTimezone(olderDateStringWithTimeZone).getTime());
+function daysDiffFromToday(olderDateStringWithTimeZone){
+  var olderDate = toDateFromTimezone(olderDateStringWithTimeZone);
+  var today = new Date();
+  var weekend = countWeekendDays(olderDate, today);
+
+  var timeDiff = Math.abs(today.getTime() - olderDate.getTime());
   var diffDays = timeDiff / (1000 * 3600 * 24);
+  return diffDays - weekend;
+}
+
+function daysDiff(olderDateStringWithTimeZone, newerDateStringWithTimeZone){
+  var newerDate = toDateFromTimezone(newerDateStringWithTimeZone);
+  var olderDate = toDateFromTimezone(olderDateStringWithTimeZone);
+  var weekend = countWeekendDays(olderDate, newerDate);
+
+  var timeDiff = Math.abs(newerDate.getTime() - olderDate.getTime());
+  var diffDays = timeDiff / (1000 * 3600 * 24) - weekend;
   return diffDays;
 }
+
+function countWeekendDays( d0, d1 )
+{
+  var ndays = 1 + Math.round((d1.getTime()-d0.getTime())/(24*3600*1000));
+  var nsaturdays = Math.floor( (d0.getDay()+ndays) / 7 );
+  return 2*nsaturdays + (d0.getDay()==0) - (d1.getDay()==6);
+}
+

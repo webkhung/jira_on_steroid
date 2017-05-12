@@ -202,7 +202,7 @@ function processIssues(data){
         addOpenIssueLinkTo(elIssue, issue.key);
         addFlightCrewTo(elIssue, fields);
 
-        if(fields.status.name == 'In Progress') {
+        if(fields.status.name != 'Open' && fields.status.name != 'Closed') {
           addDays(elIssue, fields);
         }
 
@@ -225,8 +225,6 @@ function processIssues(data){
 
     setIssueStatus(statusCounts, statusStoryPoints);
 
-    createReleaseNotes();
-
     closedStories.forEach(function(issueKey){
       makeApiRequest(baseUrl + '/rest/api/2/issue/' + issueKey + '?expand=changelog', computeCycleTime)
     });
@@ -237,6 +235,8 @@ function getIssueElement(issueKey){
 }
 
 function computeCycleTime(data){
+
+  var issueElem = getIssueElement(data.key);
   var firstTimeInProgress = null;
   var lastTimeClosed = null;
   var released = null;
@@ -260,29 +260,27 @@ function computeCycleTime(data){
         else if(item.fromString == 'Blocked') {
           leftBlocked = created;
           blockedDuration += daysDiff(enteredBlocked, leftBlocked);
-          console.log('Total blocked ' + blockedDuration)
         }
         else if(item.toString == 'Closed') {
           lastTimeClosed = created;
-          console.log('Total blocked ' + blockedDuration)
         }
-
-        console.log(item.fromString + ' -> ' + item.toString);
       }
       else if(field == 'Released'){
-        console.log('Released');
         released =  created;
       }
     });
   });
 
-  var issueElem = getIssueElement(data.key);
-
-  var releasedString = released ? "Released. Cycle Time: " : "Not yet released. Time taken: ";
+  var releasedString = released ? "Released. Cycle Time: " : "Not yet released. Total time: ";
 
   var daysTakenToRelease;
   if(firstTimeInProgress){
-    daysTakenToRelease = (daysDiff(firstTimeInProgress, released ? released : lastTimeClosed) - blockedDuration).toFixed(1) + ' Days';;
+    if(released){
+      daysTakenToRelease = (daysDiff(firstTimeInProgress, released ? released : lastTimeClosed) - blockedDuration).toFixed(1) + ' Days';
+    }
+    else {
+      daysTakenToRelease = (daysDiffFromToday(firstTimeInProgress) - blockedDuration).toFixed(1) + ' Days';
+    }
   }
   else {
     daysTakenToRelease = "N/A";
@@ -629,7 +627,7 @@ function addDays(elIssue) {
 }
 
 function addInfoToBottom(elIssue, info){
-  elIssue.find('.ghx-issue-content').append("<div style='color: #4e7aff;font-size:16px;padding-top:14px'>" + info + "</div>");
+  elIssue.find('.ghx-issue-content').append("<div style='color: #4e7aff;font-size:14px;padding-top:14px'>" + info + "</div>");
 }
 
 function addFlightCrewTo(elIssue, fields) {
@@ -809,41 +807,6 @@ function addHovercardTo(elIssue, fields, issueKey){
         relatedIssues: subtaskKeys.concat(parentKey),
         blocks: blocks
     });
-}
-
-function createReleaseNotes(){
-    /*
-
-     **Changes**
-     * [LCP-1533](https://jira.intuit.com/browse/LCP-1533): Search Experience: Related Searches.
-     * [LCP-1564](https://jira.intuit.com/browse/LCP-1564): Browse Experience Finish in Split.
-     * [LCP-1580](https://jira.intuit.com/browse/LCP-1580): Move from http to https STS endpoints.
-
-     **Bugs**
-
-     **Feature**
-
-     **Commits**
-     https://github.com/live-community/live_community/compare/RC-2015-08-05...RC-2015-08-18
-
-     **Deployment Instructions**
-     Deploy `chef_repo` databag changes for https STS endpoints.
-
-     */
-
-    // Set release notes
-    $releaseNotes = $('<div id=intu-release></div>');
-    $releaseNotes.append('**Changes**<br>');
-    releaseIssues.forEach(function(data){
-        $releaseNotes.append(data);
-        $releaseNotes.append('<br>');
-    });
-    $releaseNotes.append('**Bugs**<br>');
-    $releaseNotes.append('**Feature**<br>');
-    $releaseNotes.append('**Commits**<br>');
-    $releaseNotes.append('https://github.com/live-community/live_community/compare/[LAST TAG]...[NEW TAG]<br>');
-    $releaseNotes.append('**Deployment Instructions**<br>');
-    $('#intu-side-menu').append($releaseNotes);
 }
 
 $.fn.hovercard = function(options) {

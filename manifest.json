@@ -11,7 +11,7 @@
     "persistent": false
   },
   "name": "JIRA on Steroids",
-  "version": "5.7.1",
+  "version": "5.7.2",
   "options_page": "options.html",
   "content_security_policy": "script-src 'self' https://ssl.google-analytics.com; object-src 'self'",
   "content_scripts": [
@@ -51,6 +51,9 @@
       "images/users.png",
       "images/component.png",
       "images/menubar.png",
+      "images/clock.png",
+      "images/attention.png",
+      "images/star.png",
       "script.js"
   ],
   "manifest_version": 2

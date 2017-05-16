@@ -17,6 +17,12 @@ var hasGithub;
 var releaseIssues = [];
 var rapidViewID;
 var bHasStarted = false;
+var imgAttention = '<img src="' + chrome.extension.getURL('images/attention.png') + '" />';
+var imgTime = '<img src="' + chrome.extension.getURL('images/clock.png') + '" />';
+var imgStar = '<img src="' + chrome.extension.getURL('images/star.png') + '" />';
+
+
+var CYCLE_TIME_GOAL = 3;
 
 chrome.storage.sync.get('enabled', function(value) {
     if(value.enabled || value.enabled === undefined) {
@@ -169,7 +175,7 @@ function setupClientLoadPluginEvent() {
 
 function processIssues(data){
     var closedStories = [];
-  
+
     console.log('--- processIssues');
     updateLoadStatus('Received ' + data.issues.length + ' issues details');
 
@@ -197,10 +203,15 @@ function processIssues(data){
         resetIssue(elIssue);
         var issueIsPR = jiraGithub.addPullRequestLabel(issue.key, elIssue);
         addHovercardTo(elIssue, fields, issue.key);
-        addLabelTo(elIssue, createLabelFrom(fields.labels, issueIsPR, elIssue, fields.status.name != 'Closed'), 'top-right');
-        addAttributesTo(elIssue, fields, issueIsPR);
-        addOpenIssueLinkTo(elIssue, issue.key);
-        addFlightCrewTo(elIssue, fields);
+        if(fields.status.name != 'Closed'){
+          addLabelTo(
+            elIssue,
+            createLabelFrom(fields.labels, issueIsPR, elIssue, fields.status.name != 'Closed'),
+            'top-right');
+          addAttributesTo(elIssue, fields, issueIsPR);
+          addOpenIssueLinkTo(elIssue, issue.key);
+          addFlightCrewTo(elIssue, fields);
+        }
 
         if(fields.status.name != 'Open' && fields.status.name != 'Closed') {
           addDays(elIssue, fields);
@@ -213,6 +224,10 @@ function processIssues(data){
         if(fields.customfield_11712){
             addWatchersTo(elIssue, fields.assignee, fields.customfield_11712, watchersNames);
         }
+
+        // if(issueIsPR){
+        //   addInfoToBottom(elIssue, imgChecked + ' Pull Request');
+        // }
     });
 
     for(var key in workColumnStatuses) {
@@ -235,15 +250,15 @@ function getIssueElement(issueKey){
 }
 
 function computeCycleTime(data){
-
   var issueElem = getIssueElement(data.key);
   var firstTimeInProgress = null;
   var lastTimeClosed = null;
   var released = null;
-
   var blockedDuration = 0;
   var enteredBlocked;
   var leftBlocked;
+  var achievedGoal = false;
+  var blockedRange = [];
 
   data.changelog.histories.forEach(function(h){
     h.items.forEach(function(item){
@@ -259,42 +274,72 @@ function computeCycleTime(data){
         }
         else if(item.fromString == 'Blocked') {
           leftBlocked = created;
-          blockedDuration += daysDiff(enteredBlocked, leftBlocked);
+          blockedRange[blockedRange.length] = [enteredBlocked, leftBlocked]
         }
-        else if(item.toString == 'Closed') {
+        else if(item.toString == 'Done') {
           lastTimeClosed = created;
         }
       }
       else if(field == 'Released'){
-        released =  created;
+        released =  item.to;
       }
     });
   });
 
-  var releasedString = released ? "Released. Cycle Time: " : "Not yet released. Total time: ";
+  blockedRange.forEach(function(blocked){
+    enteredBlocked = blocked[0];
+    leftBlocked = blocked[1];
 
-  var daysTakenToRelease;
+    if(released){
+      if(day1AfterDay2(blocked[0], released)) {
+        // to nothing
+      }
+      else if(day1AfterDay2(released, blocked[0]) && day1AfterDay2(blocked[1], released)) {
+        leftBlocked = released
+      }
+      else if(day1AfterDay2(released, blocked[0]) && day1AfterDay2(blocked[1], released)) {
+        leftBlocked = released
+      }
+    }
+    blockedDuration += daysDiff(enteredBlocked, leftBlocked);
+  });
+
+  var releasedString = released ? (imgStar + "Released") : (imgAttention + "<span style='padding:0 3px;background-color:black;color:white'>Not Released</span>");
+
+  var daysTaken = "N/A";
   if(firstTimeInProgress){
     if(released){
-      daysTakenToRelease = (daysDiff(firstTimeInProgress, released ? released : lastTimeClosed) - blockedDuration).toFixed(1) + ' Days';
+      daysTaken = (daysDiff(firstTimeInProgress, released) - blockedDuration);
+      achievedGoal = daysTaken <= CYCLE_TIME_GOAL;
     }
     else {
-      daysTakenToRelease = (daysDiffFromToday(firstTimeInProgress) - blockedDuration).toFixed(1) + ' Days';
+      daysTaken = (daysDiffFromToday(firstTimeInProgress) - blockedDuration);
     }
+    daysTakenString = daysTaken.toFixed(1) + ' Days'
+  }
+
+  var timePrefix;
+  if(released){
+    issueElem.css('background-color', 'rgb(204, 253, 184)');
+    if(daysTaken <= CYCLE_TIME_GOAL)
+      timePrefix = imgStar + 'Cycle Time: ';
+    else
+      timePrefix = imgTime + 'Cycle Time: ';
   }
   else {
-    daysTakenToRelease = "N/A";
+    timePrefix = imgTime + 'Total Time: ';
   }
 
-  if(released){
-    issueElem.css('background-color', 'rgb(255, 215, 56)');
+  var daysBlocked = '';
+  if(blockedDuration >= 0.3 ) {
+    daysBlocked = ' (Blocked for ' + blockedDuration.toFixed(1) + ' Days)';
   }
+  addInfoToBottom(issueElem, releasedString);
+  addInfoToBottom(issueElem, timePrefix + daysTakenString + daysBlocked);
 
-  var blockedString = '';
-  if(blockedDuration >= 1 ) {
-    blockedString = ' (Blocked for ' + blockedDuration.toFixed(1) + ' days)';
+  if(achievedGoal){
+    // addInfoToBottom(issueElem, 'Good job');
   }
-  addInfoToBottom(issueElem, releasedString + daysTakenToRelease + blockedString);
 }
 
 function updateJiraBoard() {
@@ -590,10 +635,11 @@ function createLabelFrom(labels, issueIsPR, elIssue, setBgColor){
     }
 
     if (displayLabel.length > 0 && setBgColor) {
-        elIssue.css('background-color', 'rgba('+ hexToRgb(shadeColor(stringToColour(displayLabel), 20)) + ',0.35)');
+        // elIssue.css('background-color', 'rgba('+ hexToRgb(shadeColor(stringToColour(displayLabel), 20)) + ',0.35)');
+        elIssue.css('background-color', 'rgba(255, 250, 175, 0.35)');
     }
 
-    if(issueIsPR){
+    if(issueIsPR && setBgColor){
         if (displayLabel.length == 0){
             elIssue.css('background-color', '#C9FEFE');
         }
@@ -627,7 +673,12 @@ function addDays(elIssue) {
 }
 
 function addInfoToBottom(elIssue, info){
-  elIssue.find('.ghx-issue-content').append("<div style='color: #4e7aff;font-size:14px;padding-top:14px'>" + info + "</div>");
+  if(elIssue.find('.speed_data').length == 0) {
+    elIssue.find('.ghx-issue-content').append("<div class='speed_data'>" + info + "</div>");
+  }
+  else {
+    elIssue.find('.speed_data').append("<br>" + info);
+  }
 }
 
 function addFlightCrewTo(elIssue, fields) {
@@ -644,7 +695,7 @@ function addFlightCrewTo(elIssue, fields) {
     if(name != fields.assignee.name) {
       elIssue.find('.ghx-avatar').append("<div style='height:3px;width:1px'></div><img src='" + avatarUrl + "' class='ghx-avatar-img' alt='Assignee: " + displayName + "' data-tooltip='Assignee: " + displayName + "' />");
       flightCrewAdded++;
-      if(flightCrewAdded == 2) break; // Only put two flight crews onto display
+      if(flightCrewAdded == 1) break; // Only put two flight crews onto display
     }
   }
 }

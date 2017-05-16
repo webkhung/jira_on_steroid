@@ -87,7 +87,7 @@ function resetIssue(elIssue){
     elIssue.attr('lc-sort-order', 0);
     elIssue.css("background-color", "");
     elIssue.css('background-image', 'none');
-    elIssue.find('.github-icon, .intu-watchers, .open-icon').remove();
+    elIssue.find('.github-icon, .intu-watchers, .open-icon, .speed_data').remove();
 }
 
 function incrementCount(element){
@@ -267,10 +267,13 @@ function daysDiff(olderDateStringWithTimeZone, newerDateStringWithTimeZone){
   return diffDays;
 }
 
+function day1AfterDay2(day1, day2){
+  return toDateFromTimezone(day1) > toDateFromTimezone(day2);
+}
+
 function countWeekendDays( d0, d1 )
 {
   var ndays = 1 + Math.round((d1.getTime()-d0.getTime())/(24*3600*1000));
   var nsaturdays = Math.floor( (d0.getDay()+ndays) / 7 );
   return 2*nsaturdays + (d0.getDay()==0) - (d1.getDay()==6);
 }
-

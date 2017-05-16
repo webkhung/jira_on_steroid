@@ -50,6 +50,12 @@ function JiraGithub(){
                 auth: "basic"
             });
 
+            // var repo = github.getRepo(githubUser, githubRepo);
+            // githubIssues = [];
+            // repo.listPulls('closed', function(err, cbIssues) {
+            //     githubIssues = cbIssues;
+            // });
+
             var issues = github.getIssues(githubUser, githubRepo); // 'live-community', 'live_community'
             githubIssues = [];
             issues.list('open', function(err, cbIssues) {
@@ -91,7 +97,7 @@ function JiraGithub(){
 
     this.pullRequestLabel = function(issueKey, elIssue){
         var pr = pullRequest(issueKey);
-        if (pr == null){
+        if (pr == null || pr['labels'] === undefined){
             return "";
         }
 

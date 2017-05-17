@@ -306,7 +306,10 @@ function computeCycleTime(data){
 
   var releasedString = released ? (imgStar + "Released") : (imgAttention + "<span style='padding:0 3px;background-color:black;color:white'>Not Released</span>");
 
-  var daysTaken = "N/A";
+  var daysTaken = null;
+  var daysTakenString = '';
+  var timePrefix;
+
   if(firstTimeInProgress){
     if(released){
       daysTaken = (daysDiff(firstTimeInProgress, released) - blockedDuration);
@@ -316,31 +319,37 @@ function computeCycleTime(data){
       daysTaken = (daysDiffFromToday(firstTimeInProgress) - blockedDuration);
     }
     daysTakenString = daysTaken.toFixed(1) + ' Days'
+    timePrefix = getTimePrefix(released, daysTaken);
   }
 
-  var timePrefix;
-  if(released){
+  if(released)
     issueElem.css('background-color', 'rgb(204, 253, 184)');
-    if(daysTaken <= CYCLE_TIME_GOAL)
-      timePrefix = imgStar + 'Cycle Time: ';
-    else
-      timePrefix = imgTime + 'Cycle Time: ';
-  }
-  else {
+  else
     issueElem.css('background-color', '#ffff9a');
-    timePrefix = imgTime + 'Total Time: ';
-  }
+
 
   var daysBlocked = '';
   if(blockedDuration >= 0.3 ) {
     daysBlocked = ' (Blocked for ' + blockedDuration.toFixed(1) + ' Days)';
   }
   addInfoToBottom(issueElem, releasedString);
-  addInfoToBottom(issueElem, timePrefix + daysTakenString + daysBlocked);
 
-  if(achievedGoal){
-    // addInfoToBottom(issueElem, 'Good job');
-  }
+  if(daysTaken)
+    addInfoToBottom(issueElem, timePrefix + daysTakenString + daysBlocked);
+}
+
+function getTimePrefix(released, daysTaken){
+    var timePrefix;
+    if(released){
+      if(daysTaken <= CYCLE_TIME_GOAL)
+        timePrefix = imgStar + 'Cycle Time: ';
+      else
+        timePrefix = imgTime + 'Cycle Time: ';
+    }
+    else {
+      timePrefix = imgTime + 'Total Time: ';
+    }
+    return timePrefix;
 }
 
 function updateJiraBoard() {

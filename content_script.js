@@ -327,6 +327,7 @@ function computeCycleTime(data){
       timePrefix = imgTime + 'Cycle Time: ';
   }
   else {
+    issueElem.css('background-color', '#ffff9a');
     timePrefix = imgTime + 'Total Time: ';
   }
 
@@ -636,7 +637,7 @@ function createLabelFrom(labels, issueIsPR, elIssue, setBgColor){
 
     if (displayLabel.length > 0 && setBgColor) {
         // elIssue.css('background-color', 'rgba('+ hexToRgb(shadeColor(stringToColour(displayLabel), 20)) + ',0.35)');
-        elIssue.css('background-color', 'rgba(255, 250, 175, 0.35)');
+        elIssue.css('background-color', '#e5e5ff');
     }
 
     if(issueIsPR && setBgColor){
@@ -693,7 +694,13 @@ function addFlightCrewTo(elIssue, fields) {
     var name = f[i].name;
 
     if(name != fields.assignee.name) {
-      elIssue.find('.ghx-avatar').append("<div style='height:3px;width:1px'></div><img src='" + avatarUrl + "' class='ghx-avatar-img' alt='Assignee: " + displayName + "' data-tooltip='Assignee: " + displayName + "' />");
+      if(avatarUrl.includes('avatarId=10122')){
+        elIssue.find('.ghx-avatar').append("<div style='height:3px;width:1px'></div><span class='ghx-avatar-img' style='display:block;background-color: #3b7fc4;' data-tooltip='Assignee: " + displayName + "'>" + displayName.substring(0,1).toUpperCase() + "</span>");
+      }
+      else {
+        elIssue.find('.ghx-avatar').append("<div style='height:3px;width:1px'></div><img src='" + avatarUrl + "' class='ghx-avatar-img' alt='Assignee: " + displayName + "' data-tooltip='Assignee: " + displayName + "' />");
+      }
+
       flightCrewAdded++;
       if(flightCrewAdded == 1) break; // Only put two flight crews onto display
     }

@@ -240,9 +240,12 @@ function processIssues(data){
 
     setIssueStatus(statusCounts, statusStoryPoints);
 
-    closedStories.forEach(function(issueKey){
-      makeApiRequest(baseUrl + '/rest/api/2/issue/' + issueKey + '?expand=changelog', computeCycleTime)
-    });
+
+    if (!isPlanView()) {
+      closedStories.forEach(function(issueKey){
+        makeApiRequest(baseUrl + '/rest/api/2/issue/' + issueKey + '?expand=changelog', computeCycleTime)
+      });
+    }
 }
 
 function getIssueElement(issueKey){
@@ -312,11 +315,11 @@ function computeCycleTime(data){
 
   if(firstTimeInProgress){
     if(released){
-      daysTaken = (daysDiff(firstTimeInProgress, released) - blockedDuration);
+      daysTaken = daysDiff(firstTimeInProgress, released);
       achievedGoal = daysTaken <= CYCLE_TIME_GOAL;
     }
     else {
-      daysTaken = (daysDiffFromToday(firstTimeInProgress) - blockedDuration);
+      daysTaken = daysDiffFromToday(firstTimeInProgress);
     }
     daysTakenString = daysTaken.toFixed(1) + ' Days'
     timePrefix = getTimePrefix(released, daysTaken);
@@ -677,9 +680,14 @@ function addLabelTo(elIssue, label, position){
 }
 
 function addDays(elIssue) {
-  var days = parseInt(elIssue.find('.ghx-days').attr('title').split(' ')[0]);
-  var daysString = days + (days == 1 ? ' Day' : ' Days');
-  addInfoToBottom(elIssue, daysString);
+  if (isPlanView()) return;
+
+  var daysTitle = elIssue.find('.ghx-days').attr('title');
+  if(daysTitle){
+    var days = daysTitle.split(' ')[0];
+    var daysString = days + (days == 1 ? ' Day' : ' Days');
+    addInfoToBottom(elIssue, daysString);
+  }
 }
 
 function addInfoToBottom(elIssue, info){
@@ -692,6 +700,8 @@ function addInfoToBottom(elIssue, info){
 }
 
 function addFlightCrewTo(elIssue, fields) {
+  if (isPlanView()) return;
+
   var f = fields.customfield_17801;
   if(f === null) return;
 
@@ -702,7 +712,7 @@ function addFlightCrewTo(elIssue, fields) {
     var avatarUrl = f[i].avatarUrls["32x32"];
     var name = f[i].name;
 
-    if(name != fields.assignee.name) {
+    if(fields.assignee == null || name != fields.assignee.name) {
       if(avatarUrl.includes('avatarId=10122')){
         elIssue.find('.ghx-avatar').append("<div style='height:3px;width:1px'></div><span class='ghx-avatar-img' style='display:block;background-color: #3b7fc4;' data-tooltip='Assignee: " + displayName + "'>" + displayName.substring(0,1).toUpperCase() + "</span>");
       }
